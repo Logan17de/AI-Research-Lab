@@ -277,7 +277,7 @@ OLMo 2 and SmolLM2 are candidate families because they publish clearer base/post
 - Lower PPL alone establishes a better assistant.
 - Current results establish continual-learning superiority.
 
-## 11. Required Evidence Before Strong Claims
+## 13. Required Evidence Before Strong Claims
 
 1. Identical backbone, tokenizer, data, split, and preprocessing
 2. Matched optimizer-step and token budgets
