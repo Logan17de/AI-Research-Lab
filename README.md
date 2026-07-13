@@ -27,18 +27,32 @@ This repository tracks an evolving research program on **continual learning**, *
 | **Dynamic Transformer** | Explore split/merge neurons and token-local adaptive capacity | Early exploration; paused |
 | **FusionFormer / FusionGrammar** | Separate grammar and meaning into interacting streams | Foundational earlier work |
 
-## Current Evidence
+## Strongest Current Evidence
 
-Preliminary controlled experiments have produced several useful signals:
+A corrected, fixed-budget UltraChat SFT ablation on GPT-2 Small produced:
 
-- Modifier variants involving the transformation path learned the small 100-QA SFT dataset faster than LoRA r=32 in the tested setup.
-- On that narrow dataset, some modifier variants reached approximately **1–2 perplexity** after extended training, while LoRA r=32 stabilized around **5–6**.
-- In an early one-epoch UltraChat comparison using GPT-2 Medium, the FFN-oriented modifier reached roughly **8.0 perplexity**, compared with roughly **8.3** for LoRA.
-- Modifier capacity was dataset-dependent: a medium embedding-modifier dimension worked better than both smaller and larger settings on the narrow experiment.
-- The Inverted Transformer achieved approximately **2.83 evaluation perplexity** in one Wikipedia experiment, but it did not demonstrate a clear advantage over a standard causal language model.
-- Early Qwen/Tulu results are promising enough to continue testing, but are far too immature for strong conclusions.
+| Model | Training budget | Best eval PPL |
+|---|---:|---:|
+| LoRA | ~8,000 optimizer steps | 8.313 |
+| LoRA + FFN-oriented MOD | ~8,000 optimizer steps | 8.063 |
+| Complete: LoRA + FFN MOD + Embedding MOD | ~8,000 optimizer steps | 8.033 |
 
-These results are **preliminary, dataset-dependent, and not peer-reviewed**. Small datasets and many epochs can reward memorization, so held-out evaluation, multiple seeds, retention tests, and broader benchmarks remain mandatory.
+At the same step budget:
+
+- Adding the FFN-oriented MOD improved evaluation perplexity by **0.250** over LoRA.
+- Adding the embedding-oriented MOD after that improved it by another **0.030**.
+- The FFN-oriented component therefore accounted for most of the measured modifier gain in this experiment.
+- The Complete model achieved approximately **3.4% lower eval PPL** than LoRA alone.
+
+This establishes a measurable ablation result, but not yet parameter efficiency or broad generalization. A higher-rank LoRA may recover the same gain with fewer parameters.
+
+GPT-2 Medium + LoRA later reached approximately **6.142 eval PPL** at ~12,000 steps, confirming that the modifier did not turn GPT-2 Small into GPT-2 Medium. Medium was also much slower in the recorded setup: approximately **31k tokens/s** versus **70k tokens/s** for the Small models.
+
+Qualitative testing showed that lower PPL did not reliably produce stronger assistant behavior. Every model still struggled with strict formatting, long-range coherence, instruction grounding, and arithmetic.
+
+These results remain **preliminary, dataset-dependent, single-run evidence and are not peer-reviewed**.
+
+Read the full [GPT-2 UltraChat Ablation](docs/gpt2-ultrachat-ablation.md) and [Experimental Evidence](docs/experimental-evidence.md).
 
 ## Research Evolution
 
@@ -48,8 +62,9 @@ The work has progressed through a sequence of connected questions:
 2. Can model capacity grow dynamically through local neuron ownership?
 3. Can credit assignment be localized to reduce interference?
 4. Can a frozen pretrained model gain token-conditioned adaptive capacity?
-5. Can multiple learned domain modules be routed and composed?
-6. Can memory and reasoning remain stable, auditable, and recoverable during continual updates?
+5. Does this capacity outperform simply increasing LoRA rank?
+6. Can multiple learned domain modules be routed and composed?
+7. Can memory and reasoning remain stable, auditable, and recoverable during continual updates?
 
 See [Research Evolution](docs/research-evolution.md) for the detailed lineage.
 
@@ -60,34 +75,34 @@ Experiments aim to control:
 - pretrained backbone;
 - dataset and held-out split;
 - sequence length and token budget;
-- training steps and optimizer schedule;
+- optimizer steps and learning-rate schedule;
 - trainable parameter count;
 - random seeds;
 - decoding configuration;
+- data-loader sharding;
 - VRAM, throughput, and wall-clock time.
 
 Primary outcomes include:
 
 - held-out loss and perplexity;
 - convergence speed;
-- generation quality;
+- generation and instruction-following quality;
+- EOS behavior;
 - sequential-learning retention;
 - catastrophic forgetting;
 - parameter and compute efficiency;
 - behavioral drift.
 
-See [Experimental Evidence](docs/experimental-evidence.md) for recorded results and limitations.
-
 ## Current Roadmap
 
-- Complete matched GPT-2 full fine-tuning versus MOD comparisons
-- Run broader and multi-seed LoRA rank comparisons
-- Extend tests to Qwen-family base models
-- Evaluate individual and combined modifier families
+- Run LoRA rank sweeps under the same ~8,000-step UltraChat budget
+- Match trainable parameters and compute, not only training steps
+- Repeat the ablation across multiple seeds
+- Add automated instruction-following, coherence, format, and EOS evaluation
+- Extend controlled tests to Qwen-family base models
 - Test old-versus-new knowledge retention after sequential training
 - Train isolated domain MODs and evaluate learned routing/composition
 - Separate memorization, adaptation, and genuine generalization
-- Prepare reproducible reports suitable for research collaboration
 
 See [Research Roadmap](docs/roadmap.md) for the staged plan.
 
@@ -96,9 +111,10 @@ See [Research Roadmap](docs/roadmap.md) for the staged plan.
 1. **Evidence before claims** — a promising loss curve is not a conclusion.
 2. **Controlled comparisons** — architecture changes need matched conditions.
 3. **Retention matters** — new learning is incomplete if old capabilities silently disappear.
-4. **Governance before autonomy** — memory and reasoning should be inspectable and recoverable.
-5. **Compute-aware research** — useful ideas should be testable at small scale before expensive scaling.
-6. **Confidentiality where necessary** — findings can be documented without exposing proprietary implementation details.
+4. **Perplexity is not assistant quality** — prediction fit and instruction following are different outcomes.
+5. **Governance before autonomy** — memory and reasoning should be inspectable and recoverable.
+6. **Compute-aware research** — useful ideas should be testable at small scale before expensive scaling.
+7. **Confidentiality where necessary** — findings can be documented without exposing proprietary implementation details.
 
 ## Confidentiality
 
@@ -108,7 +124,9 @@ This repository documents research goals, experimental structure, observations, 
 
 This is active independent research. Architectures, terminology, results, and conclusions will change as stronger evidence becomes available.
 
-The objective is not to prematurely declare a replacement for established fine-tuning methods. It is to determine precisely **when localized token-conditioned adaptation helps, when it does not, and why**.
+The present question is no longer merely whether the modifier lowers loss. It is:
+
+> **Does token-conditioned FFN adaptation provide a distinct or more efficient learning path than increasing conventional low-rank adaptation capacity?**
 
 ## Contact
 
