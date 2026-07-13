@@ -118,26 +118,48 @@ If increased LoRA rank reaches the same quality with fewer parameters or lower c
 
 Perplexity remains a training-fit metric, not a complete assistant-quality metric.
 
-## Phase 5 — Modern Backbone Validation
+## Phase 5 — Modern Backbone and Capability-Gap Validation
 
-### Target
+### Problem discovered
 
-Move beyond GPT-2 to a modern pretrained base model while retaining a scale suitable for controlled experiments.
+The tested Qwen “Base” checkpoint already showed assistant-like behavior and reasoning-shaped generation. It is not a perfectly clean raw-pretraining baseline.
 
-### Work
+### Preferred comparison
 
-- Validate the Qwen/Tulu training pipeline
-- Complete a meaningful training pass
-- Compare full fine-tuning, LoRA, and MOD under identical supervision
-- Test general conversation, instruction following, arithmetic, and technical explanation
-- Audit unsupported architecture components
+Use a model family with explicit checkpoint separation:
+
+```text
+Small Base
+Official Small SFT
+Small Base + MOD
+Larger reference model
+```
+
+Candidate families include OLMo 2 and SmolLM2.
+
+### Capability Gap Recovery
+
+```text
+CGR = (MOD score - small-base score)
+      / (larger-reference score - small-base score)
+```
+
+Report CGR separately for:
+
+- instruction following;
+- factual completion;
+- reasoning;
+- code;
+- multilingual behavior;
+- general language modeling.
 
 ### Exit criteria
 
-- Stable training
-- Correct multi-turn stopping behavior
-- No tokenizer/control-token mismatch
-- Repeated evaluation on fixed probes and held-out data
+- Behaviorally clean starting checkpoint
+- Official full-SFT reference
+- Step-zero evaluation
+- Stable single-turn and multi-turn training
+- Repeated held-out and behavioral evaluation
 - No advantage claimed from an incomplete epoch
 
 ## Phase 6 — Continual-Learning Retention
@@ -145,26 +167,65 @@ Move beyond GPT-2 to a modern pretrained base model while retaining a scale suit
 ### Protocol
 
 1. Adapt on domain A
-2. Evaluate domain A and a general benchmark
-3. Adapt on domain B
-4. Re-evaluate domain A, domain B, and the general benchmark
-5. Compare forgetting across full fine-tuning, LoRA, and MOD
+2. Evaluate A using both completion and instruction formats
+3. Add domain B while replaying accumulated A+B data
+4. Re-evaluate A, B, general language modeling, and instruction behavior
+5. Repeat with domain C
+6. Compare full fine-tuning, LoRA, reusable MOD, and progressively frozen MODs
+
+### Separate knowledge from chat behavior
+
+Knowledge retention should include completion-style prompts and token metrics:
+
+- correct-token probability;
+- correct-token rank;
+- top-1 and top-5 accuracy;
+- original-corpus perplexity;
+- change relative to the untouched base.
+
+This prevents weak chat-format understanding from being misdiagnosed as factual forgetting.
 
 ### Metrics
 
-- New-domain learning
-- Old-domain retention
+- New-domain plasticity
+- Old-domain stability
+- Mixed unseen validation
 - General-capability drift
 - Recovery after re-exposure
-- Update locality
 - Trainable and active parameters
 - Time and memory cost
 
 ### Exit criteria
 
-The method must show a useful learning-retention tradeoff, not merely fast fitting.
+The method must show a better stability–plasticity trade-off, not merely fast fitting.
 
-## Phase 7 — Multi-MOD Routing
+## Phase 7 — Progressive Frozen Capacity
+
+### Equal-capacity comparison
+
+```text
+Single reusable MOD, dim 32
+versus
+MOD 1/2/3/4, dim 8 each, trained and frozen progressively
+```
+
+All stages use accumulated-data replay.
+
+### Architecture controls
+
+Test separately:
+
+1. Reusable MOD
+2. Progressive frozen MODs
+3. Width expansion
+4. Depth expansion
+5. Width + depth only after individual evidence
+
+### Decision
+
+If progressive 4×8 retains earlier tasks better than reusable 32 at similar cost, capacity isolation is contributing. If not, freezing modules mainly adds complexity.
+
+## Phase 8 — Multi-MOD Routing
 
 ### Build
 
@@ -183,7 +244,7 @@ The method must show a useful learning-retention tradeoff, not merely fast fitti
 - Old-module stability after adding a new module
 - Compute cost of combining modules
 
-## Phase 8 — Governance and Reasoning Integration
+## Phase 9 — Governance and Reasoning Integration
 
 ### Integrate
 
@@ -199,7 +260,7 @@ The method must show a useful learning-retention tradeoff, not merely fast fitti
 
 Reasoning capability should increase only when memory updates remain stable, attributable, and recoverable.
 
-## Phase 9 — Research Communication
+## Phase 10 — Research Communication
 
 ### Deliverables
 
