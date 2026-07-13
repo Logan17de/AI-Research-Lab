@@ -2,7 +2,7 @@
 
 The roadmap is organized around evidence gates. A later phase should not be treated as validated until the earlier phase produces reproducible results.
 
-## Phase 1 — Reproducible Baselines
+## Phase 1 — Correct and Reproducible Baselines
 
 ### Build
 
@@ -11,53 +11,126 @@ The roadmap is organized around evidence gates. A later phase should not be trea
 - Save all CLI arguments and model configurations
 - Standardize random seeds and decoding settings
 - Export machine-readable metrics
+- Verify iterable-dataset worker sharding
+- Use optimizer steps and supervised-token counts as primary budgets
 
-### Compare
+### Current reference
 
-- Full fine-tuning
-- Frozen pretrained base
-- LoRA at multiple ranks
-- Individual MOD families
-- Combined MOD configurations
+The corrected GPT-2 Small UltraChat comparison at ~8,000 steps is:
+
+| Variant | Eval PPL |
+|---|---:|
+| LoRA | 8.313 |
+| LoRA + FFN-oriented MOD | 8.063 |
+| Complete | 8.033 |
 
 ### Exit criteria
 
-- Runs reproduce within an acceptable variance
+- Results reproduce across at least three seeds
 - Parameter counts and active parameters are verified
 - Training/evaluation leakage is ruled out
 - Wall-clock, throughput, and VRAM are reported
+- Epoch accounting agrees with actual data traversal
 
-## Phase 2 — Capacity and Scaling
+## Phase 2 — Critical LoRA Rank Test
+
+This is the next decisive experiment.
+
+### Compare
+
+- LoRA r=8
+- LoRA r=16
+- LoRA r=32
+- Optional higher rank if parameter matching requires it
+- LoRA + FFN-oriented MOD
+- Complete MOD system
+
+### Hold fixed
+
+- GPT-2 Small backbone
+- UltraChat training subset and held-out set
+- ~8,000 optimizer steps
+- sequence length
+- effective batch size
+- optimizer and learning-rate schedule
+- seed
+- evaluation procedure
+- decoding settings
+
+### Measure
+
+- Eval PPL
+- Trainable and active parameters
+- Tokens/s
+- VRAM
+- Wall-clock time
+- Instruction-following score
+- Long-range coherence
+- EOS success
+- Hallucination and topic drift
+
+### Decision
+
+If increased LoRA rank reaches the same quality with fewer parameters or lower cost, LoRA remains the better method. If the FFN-oriented MOD preserves an advantage under parameter and compute matching, the result becomes substantially stronger.
+
+## Phase 3 — Capacity and Scaling
 
 ### Questions
 
 - How should MOD dimension scale with dataset size?
-- Does added capacity delay or eliminate plateaus?
-- When does a larger MOD merely memorize?
-- How does MOD size compare with a parameter-matched LoRA rank?
+- Does added capacity delay plateaus or merely memorize?
 - Does sharing across layers help efficiency but limit specialization?
+- How does vocabulary size affect storage cost?
+- Does relative overhead improve as model depth grows?
 
 ### Experiments
 
-- Capacity sweeps under a fixed token budget
+- MOD-capacity sweeps under fixed token budgets
 - Parameter-matched LoRA comparisons
 - Shared versus layer-specific adaptation
-- Learning curves rather than final perplexity alone
-- Multiple random seeds
+- Learning curves, not only final PPL
+- Multiple datasets and seeds
 
-## Phase 3 — Modern Backbone Validation
+## Phase 4 — Behavioral Evaluation
+
+### Automated prompt suites
+
+- Exact item-count compliance
+- Bullet/table/JSON formatting
+- Professional rewriting
+- Topic retention across long answers
+- Short planning tasks
+- Technical explanation
+- Basic arithmetic
+- EOS and continuation confidence
+
+### Metrics
+
+- Constraint adherence
+- Semantic correctness
+- Topic drift
+- Long-range coherence
+- Hallucination rate
+- EOS success
+- Human preference or blinded rating
+
+### Principle
+
+Perplexity remains a training-fit metric, not a complete assistant-quality metric.
+
+## Phase 5 — Modern Backbone Validation
 
 ### Target
 
-Move beyond GPT-2 to a modern pretrained base model while retaining a small enough scale for controlled experimentation.
+Move beyond GPT-2 to a modern pretrained base model while retaining a scale suitable for controlled experiments.
 
 ### Work
 
 - Validate the Qwen/Tulu training pipeline
-- Complete approximately one meaningful training pass
-- Compare full fine-tuning and MOD under identical supervision
+- Complete a meaningful training pass
+- Compare full fine-tuning, LoRA, and MOD under identical supervision
 - Test general conversation, instruction following, arithmetic, and technical explanation
-- Audit behavior on architecture components not covered by a modifier family
+- Audit unsupported architecture components
 
 ### Exit criteria
 
@@ -65,13 +138,13 @@ Move beyond GPT-2 to a modern pretrained base model while retaining a small enou
 - Correct multi-turn stopping behavior
 - No tokenizer/control-token mismatch
 - Repeated evaluation on fixed probes and held-out data
-- No architectural advantage claimed from an incomplete epoch
+- No advantage claimed from an incomplete epoch
 
-## Phase 4 — Continual-Learning Retention
+## Phase 6 — Continual-Learning Retention
 
 ### Protocol
 
-1. Train or adapt on domain A
+1. Adapt on domain A
 2. Evaluate domain A and a general benchmark
 3. Adapt on domain B
 4. Re-evaluate domain A, domain B, and the general benchmark
@@ -91,7 +164,7 @@ Move beyond GPT-2 to a modern pretrained base model while retaining a small enou
 
 The method must show a useful learning-retention tradeoff, not merely fast fitting.
 
-## Phase 5 — Multi-MOD Routing
+## Phase 7 — Multi-MOD Routing
 
 ### Build
 
@@ -108,9 +181,9 @@ The method must show a useful learning-retention tradeoff, not merely fast fitti
 - Cross-domain composition
 - Router confusion
 - Old-module stability after adding a new module
-- Compute cost of combining multiple modules
+- Compute cost of combining modules
 
-## Phase 6 — Governance and Reasoning Integration
+## Phase 8 — Governance and Reasoning Integration
 
 ### Integrate
 
@@ -126,26 +199,26 @@ The method must show a useful learning-retention tradeoff, not merely fast fitti
 
 Reasoning capability should increase only when memory updates remain stable, attributable, and recoverable.
 
-## Phase 7 — Research Communication
+## Phase 9 — Research Communication
 
 ### Deliverables
 
-- Architecture description at a confidentiality-safe level
-- Reproducible baseline code and configurations where appropriate
-- Experiment tables with negative results included
-- Ablation study
+- Confidentiality-safe architecture description
+- Reproducible baseline configurations where appropriate
+- Experiment tables including negative results
+- LoRA-rank and MOD ablations
 - Retention benchmark
 - Technical report or preprint
 - Compute-sponsorship summary with a concrete experiment budget
 
 ## Decision Rules
 
-Continue investing in the approach only if it demonstrates at least one durable advantage:
+Continue investing only if the method demonstrates at least one durable advantage:
 
 - better retention at matched new-task quality;
-- faster convergence at matched parameter and compute budgets;
+- faster convergence at matched parameters and compute;
 - lower active compute for comparable performance;
 - easier domain isolation and composition;
 - safer rollback or removal of learned behavior.
 
-If none of these survives controlled testing, the honest conclusion is that the modifier is extra capacity without a meaningful practical advantage. That outcome would still be scientifically useful.
+If none survives controlled testing, the honest conclusion is that the modifier is extra capacity without a meaningful practical advantage. That outcome would still be scientifically useful.
