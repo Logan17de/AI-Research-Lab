@@ -14,14 +14,9 @@ The earliest architecture work explored whether grammar and meaning could be lea
 - Sparse or gated information exchange
 - Staged grammar-only, lexical, and joint training
 
-### What this contributed
+### Contribution
 
-The experiments established the recurring themes that still guide the work:
-
-- modularity;
-- specialized parameter roles;
-- controlled information flow;
-- separate evaluation of structural and semantic learning.
+These experiments established themes that still guide the work: modularity, specialized parameter roles, controlled information flow, and separate evaluation of structural and semantic learning.
 
 The main limitation was the cost and uncertainty of training a new architecture from scratch with limited compute.
 
@@ -35,11 +30,11 @@ The next branch explored adaptive capacity through token-local neuron ownership.
 - Shared neurons with occurrence-based updates
 - Local splitting and merging
 - Copy-on-write specialization
-- Dynamic growth instead of a completely fixed parameter budget
+- Dynamic growth rather than a fully fixed parameter budget
 
 ### What was learned
 
-The design was conceptually aligned with continual learning, but the prototype was slowed by dynamic routing, neuron materialization, writeback, and Python-level control flow. The hardware and systems challenge became as important as the learning theory.
+The design aligned conceptually with continual learning, but the prototype was slowed by dynamic routing, neuron materialization, writeback, and Python-level control flow. The hardware and systems challenge became as important as the learning theory.
 
 This led to a more practical question: could token-local capacity be added to an existing pretrained transformer without rebuilding the entire architecture?
 
@@ -70,20 +65,51 @@ GPT_MOD applies token-conditioned adaptive capacity to a pretrained GPT backbone
 - Full fine-tuning
 - LoRA at multiple ranks
 - Embedding-oriented MOD
-- Transformation-oriented MOD
+- FFN-oriented MOD
 - Combined MOD systems
 - Attention-oriented MOD research
 - Frozen-base and trainable-base configurations
 
-### Main hypothesis
+### First finding: fast narrow-data fitting
 
-Localized token-conditioned parameters may add learnable capacity while disturbing fewer global weights than full fine-tuning.
+Small SFT experiments suggested that FFN-oriented MOD variants learned narrow datasets faster than selected LoRA configurations. These experiments were useful for finding signal, but many epochs on tiny data made memorization a major confound.
+
+### Corrected UltraChat benchmark
+
+A later UltraChat experiment exposed a data-loader worker duplication problem. Epoch percentages were misleading because each worker iterated the full dataset. Comparisons therefore moved from reported epochs to a fixed budget of approximately 8,000 optimizer steps.
+
+Under that corrected budget:
+
+| GPT-2 Small variant | Eval PPL |
+|---|---:|
+| LoRA | 8.313 |
+| LoRA + FFN-oriented MOD | 8.063 |
+| Complete | 8.033 |
+
+This isolated the FFN-oriented MOD as the main contributor to the measurable gain. The embedding-oriented component added a much smaller incremental improvement.
+
+### Shift in the research question
+
+The question is no longer:
+
+> Does adding a modifier improve this LoRA baseline?
+
+The current runs say yes, under this setup.
+
+The serious question is now:
+
+> Does the FFN-oriented MOD provide a more parameter-efficient or behaviorally distinct adaptation path than simply increasing LoRA rank?
+
+That question can invalidate the current advantage or make the method substantially more interesting.
 
 ### Current interpretation
 
-Early experiments suggest that transformation-oriented modifier variants can learn narrow SFT datasets quickly. Embedding-oriented adaptation can add useful capacity but may also produce behavioral drift. Modifier size is not universally “bigger is better”; the useful capacity depends on dataset size, training duration, and optimization.
-
-The implementation details that determine exact modifier placement and operation remain confidential.
+- FFN-oriented modification has a measurable validation-PPL effect.
+- Embedding-oriented modification adds a smaller incremental gain.
+- Embedding capacity may influence initial topic alignment, but a causal link to generation drift has not been established.
+- Bigger modifier dimensions are not automatically better; useful capacity depends on data and optimization.
+- Lower perplexity does not guarantee stronger instruction following.
+- Exact placement and proprietary mechanics remain confidential.
 
 ## 5. Multi-MOD Domain Routing
 
@@ -95,23 +121,24 @@ The next extension treats learned domain adaptations as composable modules.
 - Independent domain MODs, such as general, coding, medical, or legal
 - A learned router that selects one or more modules
 - A general module capable of combining or explaining domain knowledge
-- Incremental addition of new domain modules without retraining every existing module
+- Incremental addition of new modules without retraining every existing module
 
 ### Research question
 
 Can modular routing improve continual learning by isolating updates while still allowing cross-domain composition?
 
-The critical evaluation is not only new-domain accuracy, but also retention of old-domain behavior and the compute cost of combining modules.
+The critical evaluation is not only new-domain accuracy, but also old-domain retention, router reliability, and the compute cost of combining modules.
 
 ## 6. Qwen and General SFT
 
-GPT-2 is useful for controlled experiments, but it is not a strong modern assistant model. The research therefore moved toward Qwen-family models and Tulu-style general instruction data.
+GPT-2 is valuable for controlled experiments, but it is not a strong modern assistant model. The research therefore moved toward Qwen-family models and Tulu-style general instruction data.
 
 ### Current work
 
 - Assistant-only supervision
 - Explicit conversation control tokens
 - Correct handling of single-turn and multi-turn examples
+- End-of-turn separation within conversations
 - Conversation isolation rather than cross-example packing
 - Full fine-tuning versus MOD comparison
 - Careful support for hybrid attention architectures
@@ -131,14 +158,15 @@ A parallel research track studies how an adaptive model should govern memory and
 - Reasoning should abstain when evidence is insufficient
 - Confidence should remain calibrated under ambiguity and distribution shift
 
-This track connects continual learning to a larger objective: an intelligent system should not only learn, but also understand when and how its internal state changed.
+This connects continual learning to a larger objective: an intelligent system should not only learn, but also understand when and how its internal state changed.
 
 ## Present Direction
 
-The active research program combines three themes:
+The active research program combines:
 
 1. **Localized adaptation** through token-conditioned capacity
-2. **Modular composition** through domain-specific modules and routing
-3. **Governed continual learning** through retention, recovery, and calibrated reasoning
+2. **Baseline skepticism** through parameter-matched LoRA comparisons
+3. **Modular composition** through domain-specific modules and routing
+4. **Governed continual learning** through retention, recovery, and calibrated reasoning
 
-The immediate goal is controlled evidence—not a grand declaration. The research must identify where the method works, where it fails, and whether any advantage survives broader datasets, multiple seeds, and stronger baselines.
+The immediate goal is controlled evidence—not a grand declaration. The research must identify where the method works, where it fails, and whether any advantage survives broader datasets, multiple seeds, higher-rank LoRA, and stronger backbones.
