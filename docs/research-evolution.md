@@ -145,7 +145,58 @@ GPT-2 is valuable for controlled experiments, but it is not a strong modern assi
 
 Early runs show that the pipeline is functioning, but the experiments are not mature enough to establish an architectural advantage.
 
-## 7. Governed Memory and Reasoning
+### Baseline caveat
+
+The tested Qwen “Base” checkpoint already displayed assistant-like behavior and could generate reasoning-shaped traces. That makes it unsuitable as a perfectly clean measure of how much SFT capability MOD creates from a raw pretrained model.
+
+The next modern-model comparison should prefer checkpoints with clearly separated Base and SFT releases, such as:
+
+- OLMo 2 Base versus its official SFT reference;
+- SmolLM2 Base versus Instruct;
+- Qwen only when pre-existing assistant bias is explicitly measured.
+
+A proposed **Capability Gap Recovery** metric measures how much of the gap from a small base model to a larger reference model is recovered by MOD:
+
+```text
+CGR = (MOD score - small-base score)
+      / (larger-model score - small-base score)
+```
+
+### GPT-2 Tülu pipeline validation
+
+The GPT-2 pipeline was rebuilt around correct assistant-turn and conversation-end semantics. Assistant-only causal masking, multi-turn rendering, truncation, train/chat equivalence, neutral initialization, and gradient routing passed 25 regression tests.
+
+This is engineering validation, not evidence that MOD is better. It creates the reliable measurement instrument needed for the next Full versus MOD versus LoRA experiment.
+
+See [SFT Pipeline Validation](sft-pipeline-validation.md).
+
+## 7. Progressive Frozen Capacity
+
+The continual-learning direction now includes progressively adding and freezing small units of capacity.
+
+### Core experiment
+
+Compare equal total added capacity:
+
+- one reusable MOD of dimension 32 trained across stages;
+- four MODs of dimension 8, with each completed MOD frozen before adding the next.
+
+All stages train on accumulated old and new data to provide replay.
+
+If progressive capacity retains earlier tasks better than the single reusable module, the improvement would support **capacity isolation** rather than parameter count alone.
+
+### Expansion beyond modifiers
+
+Two larger controls are proposed:
+
+- **Width expansion:** freeze the original representation and add a small trainable width throughout the model.
+- **Depth expansion:** add trainable residual blocks or transformer layers around a frozen backbone.
+
+Width and depth must be tested separately before combination.
+
+See [Continual Expansion](continual-expansion.md).
+
+## 8. Governed Memory and Reasoning
 
 A parallel research track studies how an adaptive model should govern memory and reasoning.
 
@@ -165,8 +216,9 @@ This connects continual learning to a larger objective: an intelligent system sh
 The active research program combines:
 
 1. **Localized adaptation** through token-conditioned capacity
-2. **Baseline skepticism** through parameter-matched LoRA comparisons
-3. **Modular composition** through domain-specific modules and routing
-4. **Governed continual learning** through retention, recovery, and calibrated reasoning
+2. **Baseline skepticism** through parameter-matched LoRA and full-SFT comparisons
+3. **Progressive expansion** through successively frozen capacity, width, and depth
+4. **Modular composition** through domain-specific modules and routing
+5. **Governed continual learning** through retention, recovery, and calibrated reasoning
 
 The immediate goal is controlled evidence—not a grand declaration. The research must identify where the method works, where it fails, and whether any advantage survives broader datasets, multiple seeds, higher-rank LoRA, and stronger backbones.
