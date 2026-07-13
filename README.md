@@ -21,7 +21,9 @@ This repository tracks an evolving research program on **continual learning**, *
 |---|---|---|
 | **GPT_MOD** | Test token-conditioned modifier modules against LoRA and full fine-tuning | Active |
 | **Multi-MOD Router** | Compose frozen domain modules through learned routing | Planned experiments |
-| **Qwen + Tulu SFT** | Validate the approach on a modern pretrained architecture and general instruction data | Active |
+| **Qwen + Tulu SFT** | Validate the approach on a modern pretrained architecture and general instruction data | Pipeline validated; baseline caveat found |
+| **SFT Pipeline Validation** | Make single-turn and multi-turn supervision structurally correct and reproducible | 25 regression tests passed |
+| **Progressive Frozen Capacity** | Compare reusable versus successively frozen adaptation capacity | Proposed benchmark |
 | **Governed Memory & Reasoning** | Build stable, recoverable memory before increasing reasoning autonomy | Active |
 | **Inverted Transformer** | Explore localized target-side credit assignment | Prototype evaluated; deprioritized |
 | **Dynamic Transformer** | Explore split/merge neurons and token-local adaptive capacity | Early exploration; paused |
@@ -53,6 +55,49 @@ Qualitative testing showed that lower PPL did not reliably produce stronger assi
 These results remain **preliminary, dataset-dependent, single-run evidence and are not peer-reviewed**.
 
 Read the full [GPT-2 UltraChat Ablation](docs/gpt2-ultrachat-ablation.md) and [Experimental Evidence](docs/experimental-evidence.md).
+
+## Engineering Validation
+
+The new GPT-2 Tülu pipeline now has explicit, single-token conversation controls and distinct meanings for:
+
+- **end of assistant turn**;
+- **end of complete conversation**.
+
+Only assistant answers, assistant-turn endings, and the final conversation ending are supervised. User and system content remain context without direct loss. Truncation removes old complete exchanges first, preserves the latest exchange, and never packs unrelated conversations together.
+
+The implementation passed **25 regression tests**, including:
+
+- single-turn and multi-turn rendering;
+- assistant-only masking and shifted causal targets;
+- truncation and zero-target rejection;
+- train/chat token-sequence equivalence;
+- generation stopping;
+- gradient routing;
+- neutral initialization with identical starting logits;
+- legacy-format rejection.
+
+The corrected format makes previous EOS-per-turn exports and old checkpoints obsolete; new comparisons require fresh training.
+
+See [SFT Pipeline Validation](docs/sft-pipeline-validation.md).
+
+## New Continual-Learning Direction
+
+A new experiment family tests whether continually adding and freezing small capacity preserves old behavior better than repeatedly rewriting one adapter:
+
+```text
+Base → train MOD 1 → freeze
+     → add MOD 2 → train on accumulated data → freeze
+     → add MOD 3 → continue
+```
+
+The key control is equal total capacity:
+
+- one reusable MOD of dimension 32;
+- four progressively frozen MODs of dimension 8.
+
+If progressive 4×8 retains earlier tasks better, the benefit would come from **capacity isolation**, not merely more parameters. Width and depth expansion are later comparisons, not established results.
+
+See [Continual Expansion](docs/continual-expansion.md).
 
 ## Research Evolution
 
@@ -99,8 +144,12 @@ Primary outcomes include:
 - Match trainable parameters and compute, not only training steps
 - Repeat the ablation across multiple seeds
 - Add automated instruction-following, coherence, format, and EOS evaluation
-- Extend controlled tests to Qwen-family base models
-- Test old-versus-new knowledge retention after sequential training
+- Compare on a behaviorally clean base model with an official SFT reference
+- Measure Capability Gap Recovery against a larger-model reference
+- Extend controlled tests beyond GPT-2 while auditing pre-existing assistant bias
+- Test old-versus-new knowledge retention using both completion and instruction formats
+- Compare a single reusable MOD with equal-capacity progressively frozen MODs
+- Evaluate width and depth expansion as separate capacity controls
 - Train isolated domain MODs and evaluate learned routing/composition
 - Separate memorization, adaptation, and genuine generalization
 
