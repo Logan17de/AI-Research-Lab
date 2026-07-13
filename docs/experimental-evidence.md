@@ -175,10 +175,83 @@ The pretrained model started with relatively low PPL, so the raw value alone doe
 - Single-turn and multi-turn examples handled distinctly
 - Separate conversations not packed together
 
-## 10. Established, Hypothesized, and Unsupported
+## 10. GPT-2 Tülu Pipeline Validation
+
+A new training pipeline was audited before launching the next Full versus MOD versus LoRA comparison.
+
+### Conversation semantics
+
+Four registered single-token controls represent user, assistant, system, and end-of-turn boundaries. Assistant-turn ending is distinct from final conversation ending.
+
+For multi-turn data:
+
+- every assistant response ends with one end-of-turn target;
+- the complete conversation contains one final EOS;
+- no EOS is placed between assistant turns;
+- the model is not trained to generate the next user message.
+
+### Loss and truncation
+
+Direct loss is applied only to:
+
+- assistant answer tokens;
+- every assistant end-of-turn token;
+- one final conversation EOS.
+
+System text, user text, headers, separators, and padding are masked from direct loss while remaining causal context.
+
+When over length:
+
+1. oldest complete exchanges are removed first;
+2. the latest exchange is preserved;
+3. the system message is preserved when possible;
+4. final-answer truncation is a last resort;
+5. samples with no supervised answer tokens are dropped;
+6. unrelated conversations are never packed together.
+
+### Validation result
+
+The implementation passed 25 regression tests covering:
+
+- control-token registration;
+- single-turn and multi-turn rendering;
+- assistant-only masking;
+- shifted causal targets;
+- truncation;
+- train/chat prefix equivalence;
+- generation stop behavior;
+- legacy-format rejection;
+- full and MOD gradient routing;
+- neutral initialization with identical starting logits.
+
+This establishes pipeline correctness, not model superiority. Previous EOS-per-turn exports and checkpoints are incompatible with the corrected experiment.
+
+See [SFT Pipeline Validation](sft-pipeline-validation.md).
+
+## 11. Modern-Model Baseline Caveat
+
+The early Qwen run was stable and kept the frozen base gradients at zero, but the untouched “Base” checkpoint already behaved like a chatbot and generated reasoning-shaped traces.
+
+Therefore the experiment cannot cleanly answer:
+
+> How much instruction-following capability did MOD create from a genuinely raw pretrained model?
+
+A cleaner modern comparison requires a clearly separated release family:
+
+```text
+Base
+Official SFT
+MOD-adapted Base
+```
+
+OLMo 2 and SmolLM2 are candidate families because they publish clearer base/post-training separation.
+
+## 12. Established, Hypothesized, and Unsupported
 
 ### Established by current runs
 
+- The corrected GPT-2 Tülu renderer and loss pipeline passed 25 regression tests.
+- Neutral initialization begins from identical predictions, making step-zero comparison possible.
 - The FFN-oriented MOD improved GPT-2 Small + LoRA eval PPL at the same ~8k-step budget.
 - It accounted for most of the Complete model's measured PPL gain.
 - The embedding-oriented component added a smaller incremental gain.
@@ -193,6 +266,8 @@ The pretrained model started with relatively low PPL, so the raw value alone doe
 - FFN-oriented adaptation provides a distinct learning path from LoRA.
 - The modifier is more parameter-efficient than increasing LoRA rank.
 - Localized adaptation improves sequential-learning retention.
+- Progressively frozen small MODs retain better than an equal-capacity reusable MOD.
+- MOD recovers a meaningful fraction of the small-to-large capability gap.
 
 ### Not supported
 
@@ -214,6 +289,9 @@ The pretrained model started with relatively low PPL, so the raw value alone doe
 8. EOS statistics across a fixed prompt suite
 9. Sequential-domain retention tests
 10. Wall-clock, VRAM, throughput, and active-parameter reporting
+11. Step-zero evaluation with identical initial predictions
+12. Behaviorally clean Base/SFT reference checkpoints
+13. Completion-style knowledge retention separated from chat-format performance
 
 ## Current Conclusion
 
