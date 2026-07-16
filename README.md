@@ -2,180 +2,106 @@
 
 **Independent AI research by Logeshkumar Duraisamy (Logan), based in Japan.**
 
-This repository tracks an evolving research program on **continual learning**, **localized credit assignment**, **parameter-efficient adaptation**, and **governed machine reasoning**.
+**Last updated:** 2026-07-16
 
-> **Central question:** Can a language model learn new knowledge quickly while limiting interference with what it already knows?
+This repository tracks research on **continual learning**, **localized adaptation**, **parameter-efficient training**, **capacity expansion**, and **governed machine reasoning**.
 
-## Current Focus
+> **Central question:** Can a model learn new instructions and knowledge while preserving effective access to what its frozen pretrained backbone already knows?
 
-- Token-conditioned and token-local adaptation
-- Continual learning with reduced catastrophic forgetting
-- Controlled comparisons with full fine-tuning and LoRA
-- Modular domain adaptation and routing
-- Memory governance, recovery, and calibrated reasoning
-- Compute-aware experiments using GPT-2 and Qwen-family models
+## Current Experiment
 
-## Research Program
+| Variant | Trainable path |
+|---|---|
+| Full fine-tuning | Original GPT-2 parameters |
+| Complete MOD | Added token-conditioned capacity with frozen GPT-2 |
+| LoRA | Low-rank adaptation with frozen GPT-2 |
 
-| Branch | Purpose | Current status |
-|---|---|---|
-| **GPT_MOD** | Test token-conditioned modifier modules against LoRA and full fine-tuning | Active |
-| **Multi-MOD Router** | Compose frozen domain modules through learned routing | Planned experiments |
-| **Qwen + Tulu SFT** | Validate the approach on a modern pretrained architecture and general instruction data | Pipeline validated; baseline caveat found |
-| **SFT Pipeline Validation** | Make single-turn and multi-turn supervision structurally correct and reproducible | 25 regression tests passed |
-| **Progressive Frozen Capacity** | Compare reusable versus successively frozen adaptation capacity | Proposed benchmark |
-| **Governed Memory & Reasoning** | Build stable, recoverable memory before increasing reasoning autonomy | Active |
-| **Inverted Transformer** | Explore localized target-side credit assignment | Prototype evaluated; deprioritized |
-| **Dynamic Transformer** | Explore split/merge neurons and token-local adaptive capacity | Early exploration; paused |
-| **FusionFormer / FusionGrammar** | Separate grammar and meaning into interacting streams | Foundational earlier work |
+All variants must use the same starting checkpoint, chat renderer, masking, dataset split, supervised-target budget, evaluation samples, and generation settings.
 
-## Strongest Current Evidence
+## Evidence Reset — 2026-07-16
 
-A corrected, fixed-budget UltraChat SFT ablation on GPT-2 Small produced:
+A full repository audit discovered **future-token leakage in the old attention-mask path**. Teacher-forced training could see future answer tokens, while free generation could not.
 
-| Model | Training budget | Best eval PPL |
+Therefore, earlier GPT-2 SFT perplexity comparisons—including the former 8.313 / 8.063 / 8.033 UltraChat table—are **invalid as causal language-model evidence**.
+
+They remain documented only as superseded research history.
+
+The repaired implementation now verifies:
+
+| Numerical check | Maximum difference |
+|---|---:|
+| Hugging Face GPT-2 equivalence, eager and SDPA | 0.0 |
+| Future-token influence | 0.0 |
+| Explicit versus implicit causal mask | 0.0 |
+| Right-padding invariance | 0.0 |
+| Batched versus individual inference | 1.19e-7 |
+| Cached versus full-context decoding | 8.94e-8 |
+| Direct versus chat first-step logits | 0.0 |
+
+The test suite now has **54 passing tests**.
+
+## Current Valid Signal
+
+The current format reuses GPT-2's pretrained EOS token as the end of each assistant turn.
+
+In the first repaired Complete-MOD smoke run:
+
+| Metric | Step 0 | Step 100 |
 |---|---:|---:|
-| LoRA | ~8,000 optimizer steps | 8.313 |
-| LoRA + FFN-oriented MOD | ~8,000 optimizer steps | 8.063 |
-| Complete: LoRA + FFN MOD + Embedding MOD | ~8,000 optimizer steps | 8.033 |
+| Assistant-content PPL | 21.96 | 20.76 |
+| Assistant-content top-1 | 41.2% | 43.2% |
+| EOS PPL | 285.44 | 1.12 |
+| EOS top-1 | 0% | 100% |
+| Combined PPL | 25.41 | 17.59 |
 
-At the same step budget:
+This is the newest valid result. It shows that the pretrained EOS representation learned turn termination rapidly, while assistant-content quality improved more gradually.
 
-- Adding the FFN-oriented MOD improved evaluation perplexity by **0.250** over LoRA.
-- Adding the embedding-oriented MOD after that improved it by another **0.030**.
-- The FFN-oriented component therefore accounted for most of the measured modifier gain in this experiment.
-- The Complete model achieved approximately **3.4% lower eval PPL** than LoRA alone.
+It does **not** establish that MOD is superior to Full fine-tuning or LoRA.
 
-This establishes a measurable ablation result, but not yet parameter efficiency or broad generalization. A higher-rank LoRA may recover the same gain with fewer parameters.
+## Current Quality Gates
 
-GPT-2 Medium + LoRA later reached approximately **6.142 eval PPL** at ~12,000 steps, confirming that the modifier did not turn GPT-2 Small into GPT-2 Medium. Medium was also much slower in the recorded setup: approximately **31k tokens/s** versus **70k tokens/s** for the Small models.
+Before any long Tülu run, Full, MOD, and LoRA must all pass:
 
-Qualitative testing showed that lower PPL did not reliably produce stronger assistant behavior. Every model still struggled with strict formatting, long-range coherence, instruction grounding, and arithmetic.
+- EOS stop rate ≥80%;
+- repeated-trigram rate ≤25%;
+- improving assistant-content PPL;
+- reliable first-answer-token measurement;
+- low premature-stop rate;
+- healthy free greedy generation.
 
-These results remain **preliminary, dataset-dependent, single-run evidence and are not peer-reviewed**.
+The next immediate fix is the evaluator's first_answer n=0 classification bug.
 
-Read the full [GPT-2 UltraChat Ablation](docs/gpt2-ultrachat-ablation.md) and [Experimental Evidence](docs/experimental-evidence.md).
+## Documentation
 
-## Engineering Validation
-
-The new GPT-2 Tülu pipeline now has explicit, single-token conversation controls and distinct meanings for:
-
-- **end of assistant turn**;
-- **end of complete conversation**.
-
-Only assistant answers, assistant-turn endings, and the final conversation ending are supervised. User and system content remain context without direct loss. Truncation removes old complete exchanges first, preserves the latest exchange, and never packs unrelated conversations together.
-
-The implementation passed **25 regression tests**, including:
-
-- single-turn and multi-turn rendering;
-- assistant-only masking and shifted causal targets;
-- truncation and zero-target rejection;
-- train/chat token-sequence equivalence;
-- generation stopping;
-- gradient routing;
-- neutral initialization with identical starting logits;
-- legacy-format rejection.
-
-The corrected format makes previous EOS-per-turn exports and old checkpoints obsolete; new comparisons require fresh training.
-
-See [SFT Pipeline Validation](docs/sft-pipeline-validation.md).
-
-## New Continual-Learning Direction
-
-A new experiment family tests whether continually adding and freezing small capacity preserves old behavior better than repeatedly rewriting one adapter:
-
-```text
-Base → train MOD 1 → freeze
-     → add MOD 2 → train on accumulated data → freeze
-     → add MOD 3 → continue
-```
-
-The key control is equal total capacity:
-
-- one reusable MOD of dimension 32;
-- four progressively frozen MODs of dimension 8.
-
-If progressive 4×8 retains earlier tasks better, the benefit would come from **capacity isolation**, not merely more parameters. Width and depth expansion are later comparisons, not established results.
-
-See [Continual Expansion](docs/continual-expansion.md).
-
-## Research Evolution
-
-The work has progressed through a sequence of connected questions:
-
-1. Can grammar and meaning be represented in specialized streams?
-2. Can model capacity grow dynamically through local neuron ownership?
-3. Can credit assignment be localized to reduce interference?
-4. Can a frozen pretrained model gain token-conditioned adaptive capacity?
-5. Does this capacity outperform simply increasing LoRA rank?
-6. Can multiple learned domain modules be routed and composed?
-7. Can memory and reasoning remain stable, auditable, and recoverable during continual updates?
-
-See [Research Evolution](docs/research-evolution.md) for the detailed lineage.
-
-## Evaluation Standard
-
-Experiments aim to control:
-
-- pretrained backbone;
-- dataset and held-out split;
-- sequence length and token budget;
-- optimizer steps and learning-rate schedule;
-- trainable parameter count;
-- random seeds;
-- decoding configuration;
-- data-loader sharding;
-- VRAM, throughput, and wall-clock time.
-
-Primary outcomes include:
-
-- held-out loss and perplexity;
-- convergence speed;
-- generation and instruction-following quality;
-- EOS behavior;
-- sequential-learning retention;
-- catastrophic forgetting;
-- parameter and compute efficiency;
-- behavioral drift.
-
-## Current Roadmap
-
-- Run LoRA rank sweeps under the same ~8,000-step UltraChat budget
-- Match trainable parameters and compute, not only training steps
-- Repeat the ablation across multiple seeds
-- Add automated instruction-following, coherence, format, and EOS evaluation
-- Compare on a behaviorally clean base model with an official SFT reference
-- Measure Capability Gap Recovery against a larger-model reference
-- Extend controlled tests beyond GPT-2 while auditing pre-existing assistant bias
-- Test old-versus-new knowledge retention using both completion and instruction formats
-- Compare a single reusable MOD with equal-capacity progressively frozen MODs
-- Evaluate width and depth expansion as separate capacity controls
-- Train isolated domain MODs and evaluate learned routing/composition
-- Separate memorization, adaptation, and genuine generalization
-
-See [Research Roadmap](docs/roadmap.md) for the staged plan.
+- [Research Evolution](docs/research-evolution.md) — dated architecture and experiment milestones
+- [Experimental Evidence](docs/experimental-evidence.md) — valid, superseded, and invalidated claims
+- [Current Research Roadmap](docs/roadmap.md)
+- [Current SFT Pipeline Validation](docs/sft-pipeline-validation.md)
+- [Dated Research Log](docs/research-log/README.md)
+- [2026-07-16 Pipeline Audit](docs/research-log/2026-07-16-pipeline-audit.md)
+- [Continual Expansion Proposal](docs/continual-expansion.md)
+- [Superseded UltraChat Ablation](docs/gpt2-ultrachat-ablation.md)
 
 ## Research Principles
 
-1. **Evidence before claims** — a promising loss curve is not a conclusion.
-2. **Controlled comparisons** — architecture changes need matched conditions.
-3. **Retention matters** — new learning is incomplete if old capabilities silently disappear.
-4. **Perplexity is not assistant quality** — prediction fit and instruction following are different outcomes.
-5. **Governance before autonomy** — memory and reasoning should be inspectable and recoverable.
-6. **Compute-aware research** — useful ideas should be testable at small scale before expensive scaling.
-7. **Confidentiality where necessary** — findings can be documented without exposing proprietary implementation details.
+1. **Causal validity before perplexity**
+2. **Free generation before long training**
+3. **Evidence status must be explicit**
+4. **Perplexity is not assistant quality**
+5. **Retention must be separated from chat-format skill**
+6. **Matched quality matters more than matched wall-clock progress**
+7. **Negative results and invalidated runs remain documented**
+8. **Proprietary implementation details remain confidential**
 
 ## Confidentiality
 
-This repository documents research goals, experimental structure, observations, and high-level architecture families. **Exact modifier placement, implementation mechanics, and proprietary usage details are intentionally excluded.**
+This repository documents research questions, evaluation protocols, audit findings, and high-level architecture families. **Exact modifier placement and proprietary implementation mechanics are intentionally excluded.**
 
 ## Status
 
-This is active independent research. Architectures, terminology, results, and conclusions will change as stronger evidence becomes available.
+The clean Full-versus-MOD-versus-LoRA experiment is beginning again from fresh data and checkpoints after the 2026-07-16 audit.
 
-The present question is no longer merely whether the modifier lowers loss. It is:
-
-> **Does token-conditioned FFN adaptation provide a distinct or more efficient learning path than increasing conventional low-rank adaptation capacity?**
+> **At comparable SFT quality, can Complete MOD preserve and use GPT-2's pretrained knowledge better than Full fine-tuning while remaining competitive with LoRA?**
 
 ## Contact
 
