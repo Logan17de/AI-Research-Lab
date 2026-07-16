@@ -1,169 +1,134 @@
-# SFT Pipeline Validation
+# Current GPT-2 SFT Pipeline Validation
 
-## Purpose
+**Effective date:** 2026-07-16  
+**Status:** current
 
-Before comparing Full fine-tuning, MOD, and LoRA, the training data, loss mask, stopping semantics, initialization, and interactive chat path must be identical and correct.
+This document describes the repaired causal SFT pipeline. Earlier EOT-based documentation is superseded.
 
-This document records the validated behavior of the corrected GPT-2 Tülu SFT pipeline. It establishes experimental readiness—not architectural superiority.
+## Current Conversation Format
 
-## Control Tokens
-
-The tokenizer registers four single-token conversation controls:
+Role markers remain registered single tokens:
 
 | Role | Token ID |
 |---|---:|
 | User | 50257 |
 | Assistant | 50258 |
 | System | 50259 |
-| End of assistant turn | 50260 |
 
-GPT-2 EOS remains token 50256. The resulting vocabulary size is 50,261.
+GPT-2's pretrained EOS token remains 50256.
 
-## Single-Turn Semantics
+### Single turn
 
 ```text
 <USER> question
-<ASSISTANT> answer<EOT>
-<EOS>
+<ASSISTANT> answer<EOS>
 ```
 
-## Multi-Turn Semantics
+### Multi-turn
 
 ```text
 <SYSTEM> optional instruction
 <USER> question 1
-<ASSISTANT> answer 1<EOT>
+<ASSISTANT> answer 1<EOS>
 <USER> question 2
-<ASSISTANT> answer 2<EOT>
-<EOS>
+<ASSISTANT> answer 2<EOS>
 ```
 
-The meanings are deliberately separated:
+EOS ends one complete assistant turn. It does not erase previous context.
 
-- EOT: one assistant response is complete;
-- EOS: the full conversation/document is complete.
+During training:
 
-No EOS is inserted between assistant turns.
+- assistant content is supervised;
+- EOS after every assistant turn is supervised;
+- user, system, headers, separators, and padding are masked;
+- the next user turn after EOS is masked;
+- later assistant responses can attend to prior turns.
 
-## Supervision
+During chat:
 
-Direct loss is applied to:
+- generation stops on EOS;
+- EOS is removed from displayed text;
+- EOS remains in internal conversation history.
 
-- assistant answer tokens;
-- every EOT;
-- one final EOS.
+## Why Dedicated EOT Was Retired
 
-Direct loss is masked for:
+The dedicated EOT token was newly initialized and created an unfair comparison. Frozen-embedding baselines could not directly learn a pretrained-quality output row.
 
-- system headers and content;
-- user headers and content;
-- assistant headers;
-- separators;
-- padding.
+A 500-step quality gate showed poor stopping and high repetition across every variant.
 
-Context still influences assistant predictions through the causal network even when it has no direct target loss.
+GPT-2 EOS already has a meaningful pretrained representation and learned turn ending rapidly in the repaired smoke run.
 
-## Shifted Causal Targets
+## Causal Attention Repair
 
-The verified behavior is:
+The critical old bug was:
 
 ```text
-assistant header   → first answer token
-last answer token  → EOT
-intermediate EOT   → following user tokens masked
-final EOT          → separator
-separator          → final EOS
+attention_mask supplied
+→ implicit is_causal disabled
+→ padding mask present
+→ triangular future mask missing
 ```
 
-The model is not supervised to generate the next user turn.
+The repaired pipeline always preserves triangular causal attention while also handling padding.
 
-## Chat Equivalence
+## Numerical Validation
 
-Interactive chat:
+| Check | Maximum difference |
+|---|---:|
+| Hugging Face GPT-2 equivalence, eager and SDPA | 0.0 |
+| Future-token influence | 0.0 |
+| Explicit versus implicit causal mask | 0.0 |
+| Right-padding invariance | 0.0 |
+| Batched versus individual inference | 1.19e-7 |
+| Cached versus full-context decoding | 8.94e-8 |
+| Direct versus chat first-step logits | 0.0 |
 
-- preserves earlier assistant responses ending in EOT;
-- does not insert EOS between turns;
-- stops assistant generation on EOT;
-- reconstructs the same token prefix used during training.
+## Additional Audit Fixes
 
-Training and chat token sequences were verified as identical for equivalent conversations.
+- Full-FT launcher no longer freezes GPT-2
+- Gradient accumulation uses correct token weighting
+- Resume state includes step, RNG, scaler, and data position
+- Multi-worker epoch accounting is correct
+- Packed pretraining is deterministic
+- Evaluation is not silently limited
+- MOD generation is cache-compatible
+- Bias and normalization parameters avoid inappropriate weight decay
+- BF16 scaler behavior is correct
+- Dashboard metrics are token-weighted and separated by category
+- Legacy/unversioned chat data is rejected
 
-## Truncation
+## Test Status
 
-When a conversation exceeds sequence length:
+- **54 tests passing**
+- synthetic Full/MOD/LoRA overfit tests passing
+- save/resume smoke tests passing
+- old chat checkpoints rejected
+- old chat JSONL requires re-export
 
-1. remove the oldest complete exchange;
-2. preserve the latest exchange;
-3. preserve the system message when possible;
-4. remove the system message only as a complete unit;
-5. truncate the final answer only as a last resort;
-6. reconstruct a valid EOT/EOS ending;
-7. drop samples containing no supervised answer tokens.
+## Current Evaluation Categories
 
-Separate conversations are never packed together.
+Report separately:
 
-## Initialization and Gradients
+- assistant-content PPL and top-1;
+- first-answer-token PPL and top-1;
+- EOS PPL, top-1, and probability;
+- combined target PPL;
+- free-generation stop rate;
+- premature-stop rate;
+- repeated-trigram rate;
+- prompt conditioning;
+- multi-turn context use.
 
-The corrected MOD setup begins from predictions identical to the untouched base model. This enables a true step-zero comparison.
+## Remaining Known Issue
 
-Validation confirmed:
+The current evaluator reports first_answer n=0 and PPL=NaN.
 
-- frozen base parameters receive no gradients in the MOD run;
-- intended trainable components receive gradients;
-- input/output representation tying remains consistent;
-- special conversation controls receive trainable adaptation where intended.
+This classification bug must be fixed before comparative training.
 
-Exact proprietary modifier placement and mechanics are excluded from this document.
+## Fresh-Run Requirement
 
-## Validation Matrix
+All pre-audit GPT-2 chat checkpoints and old exported chat data are obsolete.
 
-The corrected implementation passed 25 regression tests covering:
+The clean experiment must begin with fresh exports, fresh checkpoints, step-zero evaluation, fixed smoke-test milestones, and free generation checked before long training.
 
-- control-token registration;
-- single-turn formatting;
-- multi-turn formatting;
-- loss masking;
-- causal shifting;
-- truncation;
-- train/chat equivalence;
-- EOT generation stopping;
-- legacy-format rejection;
-- Full and MOD gradient behavior;
-- neutral initialization.
-
-Python compilation also passed.
-
-## Compatibility
-
-Previous data exported with EOS after every assistant turn is obsolete. Old checkpoints trained with that format should not be reused for the corrected experiment.
-
-Fresh training is required.
-
-## Controlled Experiment
-
-Primary variants:
-
-1. Full fine-tuning
-2. Complete MOD
-3. LoRA
-
-Hold constant:
-
-- dataset split;
-- renderer and truncation;
-- sequence length;
-- supervised assistant-token budget;
-- evaluation samples;
-- checkpoint milestones;
-- generation settings.
-
-Evaluate at step zero and supervised-target milestones such as 1M, 5M, 10M, 25M, 50M, and one complete epoch.
-
-## Questions
-
-- Which method learns instruction behavior fastest?
-- Which reaches the best held-out SFT loss?
-- Which preserves pretrained completion knowledge?
-- Which performs best on instruction and reasoning benchmarks?
-- Which component contributes most?
-- Does MOD improve sample efficiency, final capacity, retention, or only training fit?
+Exact proprietary modifier placement and mechanics remain excluded.
