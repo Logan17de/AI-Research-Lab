@@ -2,106 +2,130 @@
 
 **Independent AI research by Logeshkumar Duraisamy (Logan), based in Japan.**
 
-**Last updated:** 2026-07-16
+**Last updated:** 2026-07-17
 
 This repository tracks research on **continual learning**, **localized adaptation**, **parameter-efficient training**, **capacity expansion**, and **governed machine reasoning**.
 
-> **Central question:** Can a model learn new instructions and knowledge while preserving effective access to what its frozen pretrained backbone already knows?
+> **Central question:** Can a smaller frozen pretrained model gain useful new capacity while preserving access to its original knowledge—and compete with a much larger densely trained model?
 
 ## Current Experiment
 
-| Variant | Trainable path |
-|---|---|
-| Full fine-tuning | Original GPT-2 parameters |
-| Complete MOD | Added token-conditioned capacity with frozen GPT-2 |
-| LoRA | Low-rank adaptation with frozen GPT-2 |
+| Variant | Resident parameters | Training path |
+|---|---:|---|
+| Pythia-1.4B + Token MOD | 1,466,241,024 | Frozen 1.4B backbone + 51,593,216 trainable MOD parameters |
+| Pythia-2.8B | 2,775,208,960 | Full fine-tuning |
 
-All variants must use the same starting checkpoint, chat renderer, masking, dataset split, supervised-target budget, evaluation samples, and generation settings.
+The MOD system has approximately **47.17% fewer resident parameters**.
 
-## Evidence Reset — 2026-07-16
+The revised architecture uses four independent high-level capacity families:
 
-A full repository audit discovered **future-token leakage in the old attention-mask path**. Teacher-forced training could see future answer tokens, while free generation could not.
+1. Input
+2. Output
+3. Attention
+4. FFN
 
-Therefore, earlier GPT-2 SFT perplexity comparisons—including the former 8.313 / 8.063 / 8.033 UltraChat table—are **invalid as causal language-model evidence**.
+Token memory is shared where appropriate, while transformer layers learn distinct interpretations. Pythia's frozen language-model head and native residual structure remain intact.
 
-They remain documented only as superseded research history.
+Exact modifier placement and proprietary implementation mechanics are intentionally excluded.
 
-The repaired implementation now verifies:
+## Implementation Status — 2026-07-17
 
-| Numerical check | Maximum difference |
+The architecture now verifies:
+
+- a strictly frozen Pythia-1.4B backbone;
+- independent input and output capacity for Pythia's untied weights;
+- layer-specific Attention and FFN interpretation;
+- one combined-logit vocabulary softmax;
+- zero-effect, gradient-safe initialization;
+- sparse MOD checkpoints and runtime ablations;
+- rejection of incompatible older checkpoints.
+
+| Test scope | Result |
 |---|---:|
-| Hugging Face GPT-2 equivalence, eager and SDPA | 0.0 |
-| Future-token influence | 0.0 |
-| Explicit versus implicit causal mask | 0.0 |
-| Right-padding invariance | 0.0 |
-| Batched versus individual inference | 1.19e-7 |
-| Cached versus full-context decoding | 8.94e-8 |
-| Direct versus chat first-step logits | 0.0 |
+| Focused Pythia tests | 18 passed |
+| Full repository tests | 78 passed |
 
-The test suite now has **54 passing tests**.
+## Current Experimental Signal
 
-## Current Valid Signal
+The first small-data run shows that Token MOD trains stably:
 
-The current format reuses GPT-2's pretrained EOS token as the end of each assistant turn.
+```text
+Train PPL: approximately 11.57 → 1.17
+Assistant validation PPL: 10.55 → 7.00 → 7.81 → 10.05 → 12.88
+```
 
-In the first repaired Complete-MOD smoke run:
+Pythia-2.8B full fine-tuning showed the same broad pattern: early validation improvement followed by degradation while training loss continued falling.
 
-| Metric | Step 0 | Step 100 |
-|---|---:|---:|
-| Assistant-content PPL | 21.96 | 20.76 |
-| Assistant-content top-1 | 41.2% | 43.2% |
-| EOS PPL | 285.44 | 1.12 |
-| EOS top-1 | 0% | 100% |
-| Combined PPL | 25.41 | 17.59 |
+This indicates that the tiny mixed Q&A dataset and validation design dominate the late result. Selecting a winner from minimum PPL would be scientific karaoke—confident, loud, and not necessarily accurate.
 
-This is the newest valid result. It shows that the pretrained EOS representation learned turn termination rapidly, while assistant-content quality improved more gradually.
+Generation suggests an early trade-off:
 
-It does **not** establish that MOD is superior to Full fine-tuning or LoRA.
+- MOD is strong at taught associations and some semantic reframing;
+- MOD is currently weaker at unseen arithmetic, procedural specificity, and rarely trained token combinations;
+- Pythia-2.8B is generally stronger at practical composition, but still hallucinates and fails harder extrapolation;
+- neither model is a clean winner.
 
-## Current Quality Gates
+## Evidence Foundation
 
-Before any long Tülu run, Full, MOD, and LoRA must all pass:
+On 2026-07-16, a full GPT-2 repository audit discovered future-token leakage in the old attention-mask path. Earlier GPT-2 SFT perplexity comparisons—including 8.313 / 8.063 / 8.033—were invalidated as causal language-model evidence.
 
-- EOS stop rate ≥80%;
-- repeated-trigram rate ≤25%;
-- improving assistant-content PPL;
-- reliable first-answer-token measurement;
-- low premature-stop rate;
-- healthy free greedy generation.
+The repaired causal pipeline reached near-exact numerical equivalence checks and 54 passing tests. That audit remains the foundation for all newer experiments.
 
-The next immediate fix is the evaluator's first_answer n=0 classification bug.
+Historical results remain documented with explicit **Valid**, **Exploratory**, **Superseded**, **Invalidated**, or **Proposed** status.
+
+## Current Conclusion
+
+Established:
+
+- the revised Token MOD architecture is operational;
+- 51.6M trainable parameters can adapt a frozen Pythia-1.4B backbone;
+- the base remains frozen;
+- the model learns taught associations and some transferable semantic behavior;
+- the present dataset is too small and noisy for the main comparison.
+
+Not established:
+
+- MOD matches or beats fully fine-tuned Pythia-2.8B;
+- MOD preserves pretrained knowledge better;
+- MOD generalizes algorithmic rules as well as dense training;
+- analytical compute estimates predict measured latency;
+- current results prove continual-learning superiority.
+
+## Next Experiment
+
+The decisive benchmark requires:
+
+- a much larger and cleaner training set;
+- a separate true held-out evaluation set;
+- broad token and context coverage;
+- rephrasing, compositional, procedural, and arithmetic evaluation;
+- untouched-pretraining retention tests;
+- matched-quality comparison;
+- measured latency, throughput, VRAM, and cost;
+- multiple seeds and additional Pythia-1.4B baselines.
 
 ## Documentation
 
-- [Research Evolution](docs/research-evolution.md) — dated architecture and experiment milestones
-- [Experimental Evidence](docs/experimental-evidence.md) — valid, superseded, and invalidated claims
+- [Research Evolution](docs/research-evolution.md)
+- [Experimental Evidence Ledger](docs/experimental-evidence.md)
 - [Current Research Roadmap](docs/roadmap.md)
-- [Current SFT Pipeline Validation](docs/sft-pipeline-validation.md)
 - [Dated Research Log](docs/research-log/README.md)
-- [2026-07-16 Pipeline Audit](docs/research-log/2026-07-16-pipeline-audit.md)
+- [2026-07-17 Pythia Token MOD Findings](docs/research-log/2026-07-17-pythia-token-mod.md)
+- [2026-07-16 GPT-2 Pipeline Audit](docs/research-log/2026-07-16-pipeline-audit.md)
+- [Current SFT Pipeline Validation](docs/sft-pipeline-validation.md)
 - [Continual Expansion Proposal](docs/continual-expansion.md)
 - [Superseded UltraChat Ablation](docs/gpt2-ultrachat-ablation.md)
 
 ## Research Principles
 
 1. **Causal validity before perplexity**
-2. **Free generation before long training**
+2. **Free generation before claims**
 3. **Evidence status must be explicit**
-4. **Perplexity is not assistant quality**
-5. **Retention must be separated from chat-format skill**
-6. **Matched quality matters more than matched wall-clock progress**
-7. **Negative results and invalidated runs remain documented**
+4. **Matched quality matters more than matched steps**
+5. **Retention must be separated from task fitting**
+6. **Measured systems cost must be separated from analytical estimates**
+7. **Negative, superseded, and invalidated results remain documented**
 8. **Proprietary implementation details remain confidential**
-
-## Confidentiality
-
-This repository documents research questions, evaluation protocols, audit findings, and high-level architecture families. **Exact modifier placement and proprietary implementation mechanics are intentionally excluded.**
-
-## Status
-
-The clean Full-versus-MOD-versus-LoRA experiment is beginning again from fresh data and checkpoints after the 2026-07-16 audit.
-
-> **At comparable SFT quality, can Complete MOD preserve and use GPT-2's pretrained knowledge better than Full fine-tuning while remaining competitive with LoRA?**
 
 ## Contact
 
