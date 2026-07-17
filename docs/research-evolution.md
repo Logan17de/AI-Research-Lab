@@ -1,6 +1,6 @@
 # Research Evolution
 
-**Last updated:** 2026-07-16
+**Last updated:** 2026-07-17
 
 This file records major research milestones in chronological order. Detailed experimental events belong in the [dated research log](research-log/README.md).
 
@@ -48,7 +48,7 @@ The run was stable and produced assistant-like text, but exact constraints and n
 
 The untouched “Base” checkpoint already displayed assistant behavior and reasoning-shaped traces.
 
-**Lesson:** a clean scientific baseline requires clear Base/SFT checkpoint separation. OLMo 2 and SmolLM2 remain candidate validation families.
+**Lesson:** a clean scientific baseline requires clear Base/SFT checkpoint separation.
 
 ## 2026-07-13 to 2026-07-15 — Multi-Turn SFT Design
 
@@ -83,13 +83,45 @@ The experiment returned to GPT-2's pretrained EOS token as the end of every assi
 
 In the repaired Complete-MOD smoke run, EOS improved from PPL 285.44 and 0% top-1 at step 0 to PPL 1.12 and 100% top-1 at step 100.
 
-**Current position:** the clean Full-versus-MOD-versus-LoRA comparison is only now beginning.
+**Outcome:** the repaired GPT-2 track established a reliable causal and evaluation foundation, but GPT-2 Small remained too limited for the main capacity comparison.
+
+## 2026-07-17 — Pythia Scale-Controlled Token MOD
+
+The research moved to a same-family comparison:
+
+- frozen Pythia-1.4B plus Token MOD;
+- fully fine-tuned Pythia-2.8B.
+
+The architecture was revised from three global families into four independent high-level families: Input, Output, Attention, and FFN. Shared token memory is interpreted differently at each transformer layer.
+
+The current configuration adds **51,593,216** trainable parameters to the 1,414,647,808-parameter backbone, producing a 1,466,241,024-parameter resident model—approximately **47.17% fewer resident parameters** than Pythia-2.8B.
+
+Implementation validation reached:
+
+- 18 focused Pythia tests passed;
+- 78 full repository tests passed;
+- frozen-base parameters and gradients remained unchanged;
+- checkpoint and ablation behavior matched the revised specification.
+
+Small-data training proved that the architecture trains and learns associations, but both the MOD model and the 2.8B dense baseline overfit the small mixed Q&A dataset.
+
+Generation suggests an early trade-off:
+
+- MOD is strong at taught associations and some semantic reframing;
+- the larger dense model is generally stronger at practical composition and limited rule extrapolation;
+- neither model is a clean winner.
+
+**Current position:** implementation validity is established; competitive model quality is unresolved.
+
+See [2026-07-17 Pythia Token MOD Findings](research-log/2026-07-17-pythia-token-mod.md).
 
 ## Future Branches
 
 These remain proposed, not validated:
 
-- matched-quality knowledge-retention tests;
+- larger, cleaner Pythia training and held-out evaluation;
+- matched-quality Pythia retention tests;
+- parameter- and compute-matched baselines;
 - progressive frozen MODs;
 - equal-capacity reusable versus isolated modules;
 - width expansion;
