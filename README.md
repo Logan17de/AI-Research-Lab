@@ -56,7 +56,7 @@ Assistant validation PPL: 10.55 → 7.00 → 7.81 → 10.05 → 12.88
 
 Pythia-2.8B full fine-tuning showed the same broad pattern: early validation improvement followed by degradation while training loss continued falling.
 
-This indicates that the tiny mixed Q&A dataset and validation design dominate the late result. Selecting a winner from minimum PPL would be scientific karaoke—confident, loud, and not necessarily accurate.
+This indicates that the tiny mixed Q&A dataset and validation design dominate the late result. Selecting a winner from minimum PPL would therefore overstate the evidence.
 
 Generation suggests an early trade-off:
 
