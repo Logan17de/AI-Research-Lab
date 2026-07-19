@@ -1,5 +1,7 @@
 # 2026-07-19 — Pythia Token MOD Variant Sweep
 
+> **Generation follow-up:** The six-checkpoint free-generation test is recorded in [2026-07-19 — Pythia Variant Chat Comparison](2026-07-19-pythia-chat-comparison.md). It found that v1_2 was the strongest practical MOD in the two-prompt sample, while v1_3 failed user-facing output formatting twice despite leading MOD perplexity.
+
 ## Status
 
 **VALID for the recorded causal-pipeline metrics.**
