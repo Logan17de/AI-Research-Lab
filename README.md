@@ -50,6 +50,21 @@ The current evidence suggests that cross-layer table sharing improves sample eff
 
 See the full [2026-07-19 Pythia Variant Sweep](docs/research-log/2026-07-19-pythia-variant-sweep.md) and its [machine-readable summary](results/pythia-variant-sweep-2026-07-19.csv).
 
+## Qualitative Chat Test — 2026-07-19
+
+A two-prompt free-generation comparison exposed a major mismatch between validation perplexity and deployed behavior:
+
+- **Pythia-2.8B full FT** was the most consistently polished and aligned model.
+- **v1_2 / 256_MOD** produced the strongest practical MOD answers despite not owning the best MOD PPL.
+- **v1_3 / 256_MOD_epoch_7** failed to produce a proper user-facing output on both prompts, even though it shares the best MOD validation PPL.
+- **v2 layer-unique** showed role confusion, irrelevant recommendations, and internal meta-tag leakage on the teacher/student prompt.
+- every variant referred to nonexistent source material, articles, books, images, standards, or experts.
+- EOS stopping was reliable, but answer presence, tag validity, grounding, and role consistency were not.
+
+This test is exploratory because it contains only two prompts. It nevertheless proves that minimum teacher-forced PPL cannot be the sole checkpoint-selection criterion.
+
+See the full [Pythia Chat Comparison](docs/research-log/2026-07-19-pythia-chat-comparison.md) and [unedited transcript](results/pythia-chat-comparison-2026-07-19.txt).
+
 ## Implementation Status
 
 The architecture verifies:
