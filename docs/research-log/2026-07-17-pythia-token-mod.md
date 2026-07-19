@@ -1,5 +1,7 @@
 # 2026-07-17 — Pythia Token MOD Architecture and Small-Data Findings
 
+> **Follow-up:** The larger chain-of-thought variant sweep and grouped layer-table experiments are documented in [2026-07-19 — Pythia Token MOD Variant Sweep](2026-07-19-pythia-variant-sweep.md). This page remains the historical record of the initial small-data architecture experiment.
+
 ## Status
 
 **VALID for implementation integrity and small-data behavior.**
