@@ -54,6 +54,16 @@ Create a substantially larger, cleaner dataset with:
 
 **Status: active**
 
+The first six-checkpoint chat comparison found:
+
+- v1_2 was the strongest practical MOD on two general-advice prompts;
+- v1_3 failed to emit a proper user-facing answer twice despite leading MOD PPL;
+- V2 showed role confusion and internal meta-tag leakage;
+- all variants hallucinated nonexistent source context;
+- EOS stopping was reliable but insufficient as a generation-quality gate.
+
+The evaluation suite must therefore score answer presence, tag validity, reasoning/meta leakage, role correctness, unsupported attribution, relevance, factuality, and usefulness independently.
+
 Build category-specific evaluation for:
 
 1. taught facts;
