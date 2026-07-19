@@ -1,8 +1,8 @@
 # Research Roadmap
 
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-19
 
-The active benchmark is now **frozen Pythia-1.4B + Token MOD versus fully fine-tuned Pythia-2.8B**.
+The active benchmark is **frozen Pythia-1.4B + Token MOD versus fully fine-tuned Pythia-2.8B**, followed by controlled shared-versus-layer-unique table ablations.
 
 The repaired GPT-2 pipeline remains the causal-validation foundation. Its detailed gates and evidence reset are preserved in the [2026-07-16 audit](research-log/2026-07-16-pipeline-audit.md).
 
@@ -77,7 +77,7 @@ Run from clean starting checkpoints:
 2. Pythia-1.4B full fine-tuning
 3. Pythia-1.4B + Token MOD
 4. Pythia-2.8B untouched
-5. Pythia-2.8B full fine-tuning
+5. Pythia-2.8B full fine-tuning — **completed for the current chain-of-thought split**
 6. parameter-matched LoRA or adapter baseline
 
 Hold rendering, data, target tokens, schedules, evaluation, and decoding fixed where scientifically appropriate.
@@ -115,15 +115,32 @@ Compare measured results with the analytical estimate of approximately 25.84M ad
 
 ## Gate 7 — Ablations and Reproducibility
 
-- Input-family ablation
-- Output-family ablation
-- Attention-family ablation
-- FFN-family ablation
-- shared versus layer-specific interpretation
-- fixed versus learned scales
-- MOD dimension sweep
-- multiple seeds
-- checkpoint round-trip equivalence
+**Status: active; first width/table sweep completed**
+
+The 2026-07-19 sweep established:
+
+- shared v1_3 and v1_4 both reached approximately 3.972 assistant PPL;
+- v1_3 is the most parameter-efficient best-performing current MOD;
+- extra shared width accelerated early learning without lowering the validation minimum;
+- the 24-table unique v2 reached approximately 4.043 despite using more trainable parameters;
+- v2 and v2_1 were almost identical through step 400 after swapping Attention and FFN widths;
+- all mature MOD curves showed validation overfitting after their best checkpoint.
+
+Required next:
+
+- fixed-dimension unique-count sweep: 1, 4, 8, and 24 tables;
+- separate parameter-matched count sweep;
+- Input+Output-only baseline;
+- Attention-only and FFN-only additions;
+- complete-family ablation;
+- per-family gradient norms;
+- per-family residual-to-base norms;
+- fixed versus learned scales;
+- multiple seeds;
+- automatic best-checkpoint restoration;
+- checkpoint round-trip equivalence.
+
+See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
 
 ## Gate 8 — Continual Expansion
 
