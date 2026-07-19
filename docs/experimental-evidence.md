@@ -1,6 +1,6 @@
 # Experimental Evidence Ledger
 
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-19
 
 Every result is assigned a status:
 
@@ -11,6 +11,38 @@ Every result is assigned a status:
 - **PROPOSED** — not yet tested.
 
 ## Current Valid Evidence
+
+### 2026-07-19 — Pythia Token MOD variant sweep
+
+**Status: VALID metrics; EXPLORATORY architecture comparison**
+
+All variants used the repaired causal pipeline, the same chain-of-thought Q&A split, seed 42, sequence length 2,048, effective batch size 20, and evaluation every 50 steps.
+
+| Variant | Table design | Trainable parameters | Best assistant PPL | Best step | Top-1 at best |
+|---|---|---:|---:|---:|---:|
+| v1_1 | shared | 51,593,216 | 4.0188 | 1,150 | 66.34% |
+| v1_2 | shared | 103,186,432 | 3.9859 | 950 | 66.48% |
+| v1_3 | shared | 103,186,432 | **3.9724** | 950 | **66.60%** |
+| v1_4 | shared | 179,568,640 | **3.9724** | 600 | 66.48% |
+| v2 | 24 layer-unique | 254,640,128 | 4.0429 | 950 | 66.15% |
+| v2_1 | 24 layer-unique | 254,640,128 | 4.1028 at step 640 | in progress | 65.87% |
+| Pythia-2.8B full FT | dense | 2,775,208,960 | **3.5190** | 2,250 | **68.60%** |
+
+Valid observations:
+
+- v1_3 is the most parameter-efficient best-performing MOD in this sweep;
+- v1_4 reaches the same approximately 3.972 minimum earlier but does not lower it;
+- v2 uses approximately 2.47 times v1_3's trainable parameters and performs worse on this dataset;
+- v2 and v2_1 differ by at most approximately 0.0053 assistant PPL through step 400 despite reversing Attention and FFN widths;
+- MOD training PPL continues falling after validation PPL turns upward;
+- the approximately 4.05 unique-table result is therefore a validation optimum under this setup, not a demonstrated hard fitting-capacity limit;
+- full Pythia-2.8B remains the quality leader and is approximately 2.3 times slower per optimization step.
+
+Interpretation:
+
+The result supports shared cross-layer token memory as the stronger current inductive bias. It does not establish that layer uniqueness is generally inferior. The unique design may require more data, different table counts, or a parameter-matched width allocation.
+
+See [2026-07-19 Pythia Token MOD Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
 
 ### 2026-07-17 — Pythia Token MOD implementation
 
@@ -194,6 +226,9 @@ The run was stable, but the starting “Base” checkpoint already showed assist
 Not established:
 
 - Token MOD matches or beats fully fine-tuned Pythia-2.8B;
+- layer-unique tables are generally inferior to shared tables;
+- Attention and FFN MOD width are functionally interchangeable;
+- Input/Output MOD dominates the internal MOD families;
 - MOD is better than Full fine-tuning or LoRA in general;
 - MOD preserves pretrained knowledge better;
 - MOD generalizes algorithmic rules as well as dense training;
