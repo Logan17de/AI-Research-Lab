@@ -1,6 +1,6 @@
 # Research Roadmap
 
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-20
 
 The active benchmark is **frozen Pythia-1.4B + Token MOD versus fully fine-tuned Pythia-2.8B**, followed by controlled shared-versus-layer-unique table ablations.
 
@@ -37,9 +37,11 @@ This run is diagnostic evidence, not a winner-selection benchmark.
 
 ## Gate 2 — Dataset v2
 
-**Status: active**
+**Status: active — first direct-answer rebuild completed; behavioral quality gate failed**
 
-Create a substantially larger, cleaner dataset with:
+The first rebuild converted 7,139 direct answers, retained 7,103 unique records, and reported zero train/validation overlap. V3 trained on this new split, so its PPL is a separate series. The dataset still needs stronger coverage of elementary arithmetic, direct instruction following, and topic-specific answers.
+
+Continue toward a substantially larger, cleaner dataset with:
 
 - separate train and held-out evaluation files;
 - broad token-frequency coverage;
@@ -62,7 +64,7 @@ The first six-checkpoint chat comparison found:
 - all variants hallucinated nonexistent source context;
 - EOS stopping was reliable but insufficient as a generation-quality gate.
 
-The evaluation suite must therefore score answer presence, tag validity, reasoning/meta leakage, role correctness, unsupported attribution, relevance, factuality, and usefulness independently.
+A V3 step-600 follow-up stopped correctly on all nine prompts but answered only two of six arithmetic/consistency probes correctly, accepted a false arithmetic premise, ignored a ten-word constraint, and drifted off-topic. The evaluation suite must therefore score answer presence, tag validity, reasoning/meta leakage, role correctness, unsupported attribution, relevance, factuality, arithmetic, false-premise correction, exact constraints, and paraphrase consistency independently.
 
 Build category-specific evaluation for:
 
@@ -133,7 +135,8 @@ The 2026-07-19 sweep established:
 - v1_3 is the most parameter-efficient best-performing current MOD;
 - extra shared width accelerated early learning without lowering the validation minimum;
 - the 24-table unique v2 reached approximately 4.043 despite using more trainable parameters;
-- v2 and v2_1 were almost identical through step 400 after swapping Attention and FFN widths;
+- completed v2 and v2_1 were effectively tied at step 950 after swapping Attention and FFN widths;
+- v2_2 learned faster early with wider Input/Output paths but destabilized abruptly after step 900;
 - all mature MOD curves showed validation overfitting after their best checkpoint.
 
 Required next:
@@ -150,7 +153,7 @@ Required next:
 - automatic best-checkpoint restoration;
 - checkpoint round-trip equivalence.
 
-See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
+See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md) and [2026-07-20 Follow-up Variants](research-log/2026-07-20-pythia-follow-up-variants.md).
 
 ## Gate 8 — Continual Expansion
 
