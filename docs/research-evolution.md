@@ -1,6 +1,6 @@
 # Research Evolution
 
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-20
 
 This file records major research milestones in chronological order. Detailed experimental events belong in the [dated research log](research-log/README.md).
 
@@ -134,6 +134,18 @@ All mature MOD runs showed training improvement after validation had begun worse
 **Current position:** cross-layer sharing appears to improve sample efficiency and regularization. A fixed-dimension table-count sweep, parameter-matched count sweep, and module-specific gradient/residual telemetry are required before attributing the result to uniqueness itself.
 
 See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
+
+## 2026-07-20 — Direct-Answer Dataset Pivot and Reliability Check
+
+The layer-unique follow-up closed with v2 and v2_1 effectively tied at approximately 4.042 assistant PPL. v2_2 improved early learning speed with wider Input/Output paths, but abruptly destabilized after step 900.
+
+The research then created a new dataset generation by extracting direct answers and discarding visible thinking. The rebuild produced 7,103 unique records with reported zero train/validation overlap. V3 reached its best validation point at step 600.
+
+The owner-confirmed V3 chat test exposed a new boundary: reasoning tags were less prominent, but direct answers remained unreliable. V3 stopped correctly on all nine prompts yet failed elementary arithmetic, false-premise correction, exact length control, and topic alignment.
+
+**Current position:** direct-answer formatting alone does not solve semantic grounding. V3 requires matched baselines on its own data rather than comparison with the earlier COT leaderboard.
+
+See [2026-07-20 Follow-up Variants](research-log/2026-07-20-pythia-follow-up-variants.md) and [V3 Chat Evaluation](research-log/2026-07-20-pythia-v3-chat-evaluation.md).
 
 ## Future Branches
 
