@@ -1,6 +1,6 @@
 # Research Evolution
 
-**Last updated:** 2026-07-17
+**Last updated:** 2026-07-19
 
 This file records major research milestones in chronological order. Detailed experimental events belong in the [dated research log](research-log/README.md).
 
@@ -114,6 +114,26 @@ Generation suggests an early trade-off:
 **Current position:** implementation validity is established; competitive model quality is unresolved.
 
 See [2026-07-17 Pythia Token MOD Findings](research-log/2026-07-17-pythia-token-mod.md).
+
+## 2026-07-18 to 2026-07-19 — Shared and Layer-Unique MOD Sweep
+
+The Pythia benchmark moved from one 51.6M-parameter MOD configuration to a controlled family of shared-width and layer-unique-table variants.
+
+The architecture gained independently configurable Attention and FFN table counts, contiguous layer grouping, strict divisibility validation, exact layer-map checkpoint persistence, and startup reporting.
+
+The first sweep produced three important signals:
+
+1. v1_3 and v1_4 both reached approximately 3.972 assistant validation PPL;
+2. increasing shared internal width improved early learning speed but did not lower the final validation minimum;
+3. the 24-table layer-unique v2 reached approximately 4.043 despite using approximately 254.6M trainable parameters.
+
+A follow-up v2_1 run reversed Attention and FFN widths while preserving the same total parameter count. Its curve was nearly identical to v2 through step 400.
+
+All mature MOD runs showed training improvement after validation had begun worsening. The approximately 4.05 unique-table result is therefore treated as a generalization optimum under the current protocol, not a hard storage-capacity wall.
+
+**Current position:** cross-layer sharing appears to improve sample efficiency and regularization. A fixed-dimension table-count sweep, parameter-matched count sweep, and module-specific gradient/residual telemetry are required before attributing the result to uniqueness itself.
+
+See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
 
 ## Future Branches
 
