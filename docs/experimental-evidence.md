@@ -1,6 +1,6 @@
 # Experimental Evidence Ledger
 
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-20
 
 Every result is assigned a status:
 
@@ -11,6 +11,24 @@ Every result is assigned a status:
 - **PROPOSED** — not yet tested.
 
 ## Current Valid Evidence
+
+### 2026-07-20 — Follow-up variants and direct-answer V3
+
+**Status: VALID metrics and dataset reports; EXPLORATORY interpretation**
+
+| Variant | Dataset generation | Trainable parameters | Best assistant PPL | Best step | Result |
+|---|---|---:|---:|---:|---|
+| v2_1 | original COT-answer | 254,640,128 | 4.0420 | 950 | effectively tied with v2 |
+| v2_2 | original COT-answer | 214,433,792 | 4.0589 | 900 | faster early; destabilized after step 900 |
+| v3 | rebuilt direct-answer | 77,053,952 | 6.5713 | 600 | separate, non-comparable dataset series |
+
+v2 and v2_1 differ by approximately 0.0009 PPL at their shared best step. v2_2 learned faster early but abruptly degraded between steps 900 and 950. V3's conversion produced 7,103 unique records with 6,393 train and 710 validation examples and reported zero exact, question, or answer overlap.
+
+V3 used an 8,743,518-byte direct-answer training file; the July 19 variants used a 21,791,514-byte COT-answer file. Cross-dataset PPL ranking is invalid.
+
+The owner-confirmed V3 step-600 chat test stopped with EOS on all nine prompts but answered only two of six arithmetic/consistency probes correctly, accepted `2 × 3 = 1`, ignored a ten-word constraint, and drifted off-topic on procrastination. Direct-answer conversion did not by itself produce reliable instruction following.
+
+See [2026-07-20 Pythia Follow-up Variants](research-log/2026-07-20-pythia-follow-up-variants.md) and [Pythia V3 Chat Evaluation](research-log/2026-07-20-pythia-v3-chat-evaluation.md).
 
 ### 2026-07-19 — Pythia Token MOD variant sweep
 
@@ -25,7 +43,8 @@ All variants used the repaired causal pipeline, the same chain-of-thought Q&A sp
 | v1_3 | shared | 103,186,432 | **3.9724** | 950 | **66.60%** |
 | v1_4 | shared | 179,568,640 | **3.9724** | 600 | 66.48% |
 | v2 | 24 layer-unique | 254,640,128 | 4.0429 | 950 | 66.15% |
-| v2_1 | 24 layer-unique | 254,640,128 | 4.1028 at step 640 | in progress | 65.87% |
+| v2_1 | 24 layer-unique | 254,640,128 | 4.0420 | 950 | 66.15% |
+| v2_2 | 24 layer-unique | 214,433,792 | 4.0589 | 900 | 66.17% |
 | Pythia-2.8B full FT | dense | 2,775,208,960 | **3.5190** | 2,250 | **68.60%** |
 
 Valid observations:
@@ -33,7 +52,8 @@ Valid observations:
 - v1_3 is the most parameter-efficient best-performing MOD in this sweep;
 - v1_4 reaches the same approximately 3.972 minimum earlier but does not lower it;
 - v2 uses approximately 2.47 times v1_3's trainable parameters and performs worse on this dataset;
-- v2 and v2_1 differ by at most approximately 0.0053 assistant PPL through step 400 despite reversing Attention and FFN widths;
+- completed v2 and v2_1 are effectively tied at step 950 despite reversing Attention and FFN widths;
+- v2_2 learned faster early, then experienced an abrupt training destabilization after step 900;
 - MOD training PPL continues falling after validation PPL turns upward;
 - the approximately 4.05 unique-table result is therefore a validation optimum under this setup, not a demonstrated hard fitting-capacity limit;
 - full Pythia-2.8B remains the quality leader and is approximately 2.3 times slower per optimization step.
