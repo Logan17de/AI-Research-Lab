@@ -1,0 +1,4 @@
+variant,dataset_generation,train_file_bytes,input_dim,output_dim,attention_dim,ffn_dim,attention_unique_tables,ffn_unique_tables,trainable_parameters,status,best_assistant_ppl,best_combined_ppl,best_step,top1_at_best,last_step,last_assistant_ppl,notes
+v2_1,original_cot_answer,21791514,128,128,128,64,24,24,254640128,complete,4.0420111890,4.0329808190,950,0.6614556314,1060,4.0598753824,width-swap result; effectively tied with v2
+v2_2,original_cot_answer,21791514,512,512,64,64,24,24,214433792,stopped_after_instability,4.0589195691,4.0498193089,900,0.6617082512,1020,5.4197388227,abrupt collapse between steps 900 and 950
+v3,direct_answer_no_thinking,8743518,128,128,128,512,1,1,77053952,stopped,6.5713395519,6.5347217059,600,0.5623220418,760,6.7076069982,new dataset; not comparable with old COT runs
