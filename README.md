@@ -2,7 +2,7 @@
 
 **Independent AI research by Logeshkumar Duraisamy (Logan), based in Japan.**
 
-**Last updated:** 2026-07-19
+**Last updated:** 2026-07-20
 
 This repository tracks research on **continual learning**, **localized adaptation**, **parameter-efficient training**, **capacity expansion**, and **governed machine reasoning**.
 
@@ -10,7 +10,7 @@ This repository tracks research on **continual learning**, **localized adaptatio
 
 ## Current Experiment
 
-The active benchmark compares frozen Pythia-1.4B + Token MOD variants with fully fine-tuned Pythia-2.8B on a chain-of-thought Q&A split.
+The research now tracks two distinct benchmark generations: the original chain-of-thought Q&A split used by the July 19 leaderboard, and a rebuilt direct-answer split introduced with v3. Metrics must not be compared across those dataset generations.
 
 The MOD architecture contains four independent high-level families:
 
@@ -34,7 +34,8 @@ Dimensions are Input / Output / Attention / FFN.
 | v1_3 | 256 / 256 / 256 / 512 | shared | 103.2M | **3.9724** | 950 |
 | v1_4 | 256 / 256 / 512 / 1,024 | shared | 179.6M | **3.9724** | 600 |
 | v2 | 128 / 128 / 64 / 128 | 24 layer-unique | 254.6M | 4.0429 | 950 |
-| v2_1 | 128 / 128 / 128 / 64 | 24 layer-unique | 254.6M | 4.1028 at step 640 | in progress |
+| v2_1 | 128 / 128 / 128 / 64 | 24 layer-unique | 254.6M | **4.0420** | 950 |
+| v2_2 | 512 / 512 / 64 / 64 | 24 layer-unique | 214.4M | 4.0589 | 900 |
 | Pythia-2.8B full FT | — | dense | 2.775B | **3.5190** | 2,250 |
 
 The principal findings are:
@@ -42,13 +43,26 @@ The principal findings are:
 - **v1_3 is the most parameter-efficient best-performing MOD** in the sweep.
 - v1_4 reaches the same validation floor earlier, but additional shared width does not lower that floor.
 - v2 uses approximately 2.47 times v1_3's trainable parameters and performs worse on the current dataset.
-- v2 and v2_1 follow nearly identical curves through step 400 despite reversing Attention and FFN widths.
+- v2 and completed v2_1 are effectively tied at step 950 despite reversing Attention and FFN widths.
+- v2_2 learned faster early with wider Input/Output paths, but abruptly destabilized between steps 900 and 950; only step 900 is retained as its valid best checkpoint.
 - training PPL continues falling after validation PPL turns upward, so the approximately 4.05 unique-table minimum is a generalization/overfitting boundary under this setup—not a demonstrated hard capacity wall.
 - Pythia-2.8B full fine-tuning remains the quality leader, while running approximately 2.3 times slower per optimization step at the same effective batch size.
 
 The current evidence suggests that cross-layer table sharing improves sample efficiency and acts as a useful regularizing inductive bias. Layer-unique tables may require more data or a different width/count allocation.
 
 See the full [2026-07-19 Pythia Variant Sweep](docs/research-log/2026-07-19-pythia-variant-sweep.md) and its [machine-readable summary](results/pythia-variant-sweep-2026-07-19.csv).
+
+## Follow-up Variants and Direct-Answer V3 — 2026-07-20
+
+The completed follow-up adds three results:
+
+- **v2_1** finished at assistant PPL 4.0420, effectively tying v2 and showing no measurable benefit from swapping a fixed unique-table width budget between Attention and FFN;
+- **v2_2** accelerated early optimization through 512-wide Input/Output paths, then suffered an abrupt training destabilization after step 900;
+- **v3** started a separate direct-answer dataset generation with 7,103 unique records, zero reported train/validation overlap, and a best assistant PPL of 6.5713 at step 600.
+
+V3's PPL is not comparable to the July 19 leaderboard. The owner-confirmed V3 step-600 chat test produced 9/9 EOS stops but only 2/6 correct arithmetic/consistency responses, accepted the false premise `2 × 3 = 1`, ignored the ten-word constraint, and drifted off-topic on procrastination. V3 is fluent but not reliable enough for user-facing chat.
+
+See the [2026-07-20 Follow-up Variants](docs/research-log/2026-07-20-pythia-follow-up-variants.md), [V3 Chat Evaluation](docs/research-log/2026-07-20-pythia-v3-chat-evaluation.md), and [machine-readable metrics](results/pythia-follow-up-variants-2026-07-20.csv).
 
 ## Qualitative Chat Test — 2026-07-19
 
@@ -113,8 +127,11 @@ Not established:
 
 ## Next Experiment
 
-The next controlled sweep requires:
+The next controlled work requires:
 
+- matched Full, LoRA, and MOD baselines on the rebuilt direct-answer dataset;
+- a fixed scored chat suite covering arithmetic, false-premise correction, brevity, relevance, hallucination, and paraphrase consistency;
+- v2_2 checkpoint and optimizer diagnostics around steps 900–1,000;
 - identical dimensions and schedules with unique-table counts 1, 4, 8, and 24;
 - a separate parameter-matched count sweep;
 - Input+Output-only, Attention, FFN, and complete-family ablations;
@@ -130,6 +147,8 @@ The next controlled sweep requires:
 - [Experimental Evidence Ledger](docs/experimental-evidence.md)
 - [Current Research Roadmap](docs/roadmap.md)
 - [Dated Research Log](docs/research-log/README.md)
+- [2026-07-20 Pythia Follow-up Variants](docs/research-log/2026-07-20-pythia-follow-up-variants.md)
+- [2026-07-20 Pythia V3 Chat Evaluation](docs/research-log/2026-07-20-pythia-v3-chat-evaluation.md)
 - [2026-07-19 Pythia Variant Sweep](docs/research-log/2026-07-19-pythia-variant-sweep.md)
 - [2026-07-17 Pythia Token MOD Findings](docs/research-log/2026-07-17-pythia-token-mod.md)
 - [2026-07-16 GPT-2 Pipeline Audit](docs/research-log/2026-07-16-pipeline-audit.md)
