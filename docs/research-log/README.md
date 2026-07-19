@@ -6,6 +6,7 @@ Chronological experiment and audit records live here. File names use ISO dates s
 
 | Date | Entry | Status |
 |---|---|---|
+| 2026-07-19 | [Pythia Token MOD Variant Sweep](2026-07-19-pythia-variant-sweep.md) | Current metrics; exploratory architecture comparison |
 | 2026-07-17 | [Pythia Token MOD Architecture and Small-Data Findings](2026-07-17-pythia-token-mod.md) | Current architecture; exploratory comparison |
 | 2026-07-16 | [GPT-2 Pipeline Audit and Evidence Reset](2026-07-16-pipeline-audit.md) | Current causal foundation |
 
