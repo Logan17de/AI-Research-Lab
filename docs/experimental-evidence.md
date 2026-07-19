@@ -44,6 +44,35 @@ The result supports shared cross-layer token memory as the stronger current indu
 
 See [2026-07-19 Pythia Token MOD Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md).
 
+### 2026-07-19 — Pythia free-generation comparison
+
+**Status: VALID generations; EXPLORATORY ranking**
+
+Six checkpoints were tested on two general-advice prompts.
+
+| Variant | Qualitative result |
+|---|---|
+| Pythia-2.8B full FT | most consistent overall |
+| v1_2 / 256_MOD | strongest practical MOD |
+| v1_1 / 128_MOD | reliable but verbose |
+| v1_4 / Custom_MOD | clean but shallow |
+| v2 layer-unique | role confusion and meta-tag leakage |
+| v1_3 / 256_MOD_epoch_7 | no proper user-facing output on either prompt |
+
+Valid observations:
+
+- the minimum-PPL MOD checkpoint was not the most reliable generation checkpoint;
+- v1_3 failed answer-format completion twice despite approximately 3.972 validation PPL;
+- every model introduced unsupported source framing;
+- v1_2 hallucinated a named technique and expert;
+- V2 changed the teacher/student role into parent/child and leaked internal meta-sections;
+- all models stopped reliably with EOS;
+- EOS success did not guarantee answer presence, valid structure, grounding, or task alignment.
+
+This test does not establish a general model ranking because it contains only two prompts. It establishes that free-generation and format checks are mandatory before checkpoint selection.
+
+See [2026-07-19 Pythia Chat Comparison](research-log/2026-07-19-pythia-chat-comparison.md).
+
 ### 2026-07-17 — Pythia Token MOD implementation
 
 **Status: VALID for architecture and implementation integrity**
