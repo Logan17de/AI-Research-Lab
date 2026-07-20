@@ -280,6 +280,12 @@ Multiple human or model judges should evaluate randomized answers without seeing
 | visible reasoning traces demonstrate genuine reasoning | **NOT SUPPORTED** |
 | the unique-table architecture is inherently worse at instruction following | **NOT ESTABLISHED** |
 
+## 2026-07-20 direct-answer follow-up
+
+A new V3 checkpoint was trained on a rebuilt direct-answer dataset that discards visible thinking. The owner-confirmed step-600 chat test is recorded separately in [Pythia V3 Chat Evaluation](2026-07-20-pythia-v3-chat-evaluation.md).
+
+The new transcript shows fewer explicit reasoning/meta tags, but severe reliability failures remain: only two of six arithmetic/consistency probes were correct, a false arithmetic premise was accepted, an exact word-count instruction was ignored, and a procrastination answer drifted off-topic. Direct-answer formatting did not by itself solve semantic grounding.
+
 ## Current Conclusion
 
 The chat test changes the interpretation of the metric sweep.
