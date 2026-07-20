@@ -1,6 +1,6 @@
 # 2026-07-19 — Pythia Token MOD Variant Sweep
 
-> **Generation follow-up:** The six-checkpoint free-generation test is recorded in [2026-07-19 — Pythia Variant Chat Comparison](2026-07-19-pythia-chat-comparison.md). It found that v1_2 was the strongest practical MOD in the two-prompt sample, while v1_3 failed user-facing output formatting twice despite leading MOD perplexity.
+> **Follow-ups:** The [six-checkpoint chat comparison](2026-07-19-pythia-chat-comparison.md) found that v1_2 was the strongest practical MOD in its two-prompt sample. The [2026-07-20 variant follow-up](2026-07-20-pythia-follow-up-variants.md) closes v2_1, adds v2_2, and begins a separate non-comparable direct-answer V3 series.
 
 ## Status
 
@@ -40,10 +40,11 @@ Dimensions are written as Input / Output / Attention / FFN.
 | v1_3 | 256 / 256 / 256 / 512 | 1 shared table per family | 103,186,432 | **3.9724** | **3.9636** | 950 | **66.60%** | 4.0289 |
 | v1_4 | 256 / 256 / 512 / 1,024 | 1 shared table per family | 179,568,640 | **3.9724** | **3.9637** | 600 | 66.48% | 3.9968 |
 | v2 | 128 / 128 / 64 / 128 | 24 layer-unique tables per family | 254,640,128 | 4.0429 | 4.0339 | 950 | 66.15% | 4.0732 |
-| v2_1 | 128 / 128 / 128 / 64 | 24 layer-unique tables per family | 254,640,128 | 4.1028 | 4.0936 | 600 | 65.87% | 4.1028 at step 640 |
+| v2_1 | 128 / 128 / 128 / 64 | 24 layer-unique tables per family | 254,640,128 | 4.0420 | 4.0330 | 950 | 66.15% | 4.0599 at step 1,060 |
+| v2_2 | 512 / 512 / 64 / 64 | 24 layer-unique tables per family | 214,433,792 | 4.0589 | 4.0498 | 900 | 66.17% | 5.4197 at step 1,020 |
 | Pythia-2.8B full FT | — | — | 2,775,208,960 | **3.5190** | **3.5119** | 2,250 | **68.60%** | 3.5202 |
 
-v2_1 was still in progress when this record was written. Its row is a step-640 snapshot, not a completed minimum.
+v2_1 later completed with a best assistant PPL of 4.0420 at step 950. v2_2 is included because it uses the same original COT-answer dataset; its checkpoints after step 900 are excluded from comparison because the run abruptly destabilized.
 
 The machine-readable summary is stored in [results/pythia-variant-sweep-2026-07-19.csv](../../results/pythia-variant-sweep-2026-07-19.csv).
 
@@ -137,7 +138,8 @@ After the initial region, combined PPL remained approximately 0.009 below assist
 | v1_3 is the most parameter-efficient best-performing MOD in this sweep | **VALID within this protocol** |
 | v1_4 learns faster but reaches the same minimum as v1_3 | **VALID within this protocol** |
 | v2 reached approximately 4.043 and then overfit | **VALID** |
-| v2 and v2_1 are nearly identical through step 400 | **VALID** |
+| v2 and completed v2_1 are effectively tied at step 950 | **VALID** |
+| v2_2 destabilized abruptly after step 900 | **VALID observation; cause unknown** |
 | Layer-unique tables are generally inferior | **NOT ESTABLISHED** |
 | Attention and FFN MODs are functionally interchangeable | **NOT ESTABLISHED** |
 | Input/Output MOD dominates the internal MODs | **HYPOTHESIS** |
@@ -155,6 +157,14 @@ After the initial region, combined PPL remained approximately 0.009 below assist
 7. Add Pythia-1.4B full fine-tuning and a parameter-matched LoRA baseline.
 8. Repeat decisive configurations over multiple seeds.
 9. Evaluate untouched-pretraining retention and free generation before making continual-learning claims.
+
+## 2026-07-20 completion note
+
+v2_1 completed with best assistant PPL 4.0420111890 at step 950, effectively tying v2's 4.0429226086 at the same step. The width swap alone had no measurable effect in this run.
+
+v2_2 reached best assistant PPL 4.0589195691 at step 900 after faster early learning, then abruptly destabilized between steps 900 and 950. Its later checkpoints are excluded from architecture comparison.
+
+The rebuilt direct-answer v3 dataset is intentionally excluded from this table. Its metrics and comparability boundary are documented in the [July 20 follow-up](2026-07-20-pythia-follow-up-variants.md).
 
 ## Current Conclusion
 
