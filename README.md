@@ -2,7 +2,7 @@
 
 **Independent AI research by Logeshkumar Duraisamy (Logan), based in Japan.**
 
-**Last updated:** 2026-07-20
+**Last updated:** 2026-07-22
 
 This repository tracks research on **continual learning**, **localized adaptation**, **parameter-efficient training**, **capacity expansion**, and **governed machine reasoning**.
 
@@ -10,7 +10,7 @@ This repository tracks research on **continual learning**, **localized adaptatio
 
 ## Current Experiment
 
-The research now tracks two distinct benchmark generations: the original chain-of-thought Q&A split used by the July 19 leaderboard, and a rebuilt direct-answer split introduced with v3. Metrics must not be compared across those dataset generations.
+The research now tracks three distinct benchmark generations: the original chain-of-thought Q&A split, the rebuilt direct-answer V3 split, and the new locked filtered-UltraChat benchmark. Metrics must not be compared across dataset generations.
 
 The MOD architecture contains four independent high-level families:
 
@@ -64,6 +64,38 @@ V3's PPL is not comparable to the July 19 leaderboard. The owner-confirmed V3 st
 
 See the [2026-07-20 Follow-up Variants](docs/research-log/2026-07-20-pythia-follow-up-variants.md), [V3 Chat Evaluation](docs/research-log/2026-07-20-pythia-v3-chat-evaluation.md), and [machine-readable metrics](results/pythia-follow-up-variants-2026-07-20.csv).
 
+## Locked UltraChat Plasticity Benchmark — 2026-07-22
+
+A deterministic English UltraChat manifest now provides the cleanest large-data comparison:
+
+| Split | Examples | Tokens |
+|---|---:|---:|
+| Train | 72,000 | 49,777,171 |
+| Validation | 1,500 | 1,019,539 |
+| Test | 1,500 | 1,033,646 |
+
+The manifest fixes filtering, category quotas, tokenizer identity, file hashes, token order, sample order, seed, and loader behavior.
+
+Current results:
+
+| Variant | Snapshot | Best assistant PPL | Best step | Interpretation |
+|---|---|---:|---:|---|
+| Pythia-1.4B MOD + plastic-4 | completed to 1,350 | **3.5608** | 950 | limited tail plasticity; mild late plateau |
+| Pythia-1.4B MOD + plastic-24 | active through 240 | **3.6520** | 200 | early snapshot; nearly full-backbone hybrid |
+| Pythia-2.8B full FT | completed to 1,450 | **3.2402** | 1,450 | current validation leader |
+
+At matched step 200, assistant PPL was 3.6970, 3.6520, and 3.3908 respectively.
+
+The 2.8B dense model reached 3.5014 by step 100, already below the plastic-4 model's eventual best. This means full fine-tuning is currently more sample-efficient on the locked objective.
+
+Plastic-4 selected 201.4M original base parameters. Plastic-24 selected 1.312B—approximately 92.7% of Pythia-1.4B—so plastic-24 should not be presented as a strongly parameter-efficient baseline.
+
+Recorded throughput favored the smaller hybrids, but the runs used different reported GPU environments. No controlled speed multiplier is claimed.
+
+The new Adaptive Transformer Expansion branch has also been implemented and initialized. Its first run has no metrics yet, so ATE remains **Proposed / Initialized**, not a model-quality result.
+
+See the full [2026-07-22 Locked UltraChat Plasticity and ATE Analysis](docs/research-log/2026-07-22-ultrachat-plasticity-ate.md) and [machine-readable snapshot](results/pythia-ultrachat-plasticity-2026-07-22.csv).
+
 ## Qualitative Chat Test — 2026-07-19
 
 A two-prompt free-generation comparison exposed a major mismatch between validation perplexity and deployed behavior:
@@ -114,7 +146,10 @@ Established:
 - shared tables outperform the current 24-table unique configuration;
 - additional shared width improves early learning speed more than the final validation minimum;
 - all evaluated MOD variants eventually show a train/eval generalization gap;
-- the 2.8B dense baseline remains stronger on held-out perplexity.
+- the 2.8B dense baseline remains stronger on held-out perplexity;
+- on locked UltraChat, plastic-4 reaches 3.5608 while 2.8B full FT reaches 3.2402;
+- limited plasticity narrows but does not close the quality gap;
+- ATE is implemented but has no measured result.
 
 Not established:
 
@@ -122,14 +157,16 @@ Not established:
 - Attention and FFN MOD capacity are functionally interchangeable;
 - Input/Output MOD dominates internal MODs;
 - MOD matches or beats fully fine-tuned Pythia-2.8B;
-- MOD preserves pretrained knowledge better;
+- MOD or controlled plasticity preserves pretrained knowledge better;
+- broad plasticity remains parameter-efficient;
+- ATE improves quality, efficiency, or retention;
 - current results prove continual-learning superiority.
 
 ## Next Experiment
 
 The next controlled work requires:
 
-- matched Full, LoRA, and MOD baselines on the rebuilt direct-answer dataset;
+- pure frozen MOD, Pythia-1.4B Full, LoRA, plastic-4, plastic-24, and Pythia-2.8B Full baselines on the locked UltraChat manifest;
 - a fixed scored chat suite covering arithmetic, false-premise correction, brevity, relevance, hallucination, and paraphrase consistency;
 - v2_2 checkpoint and optimizer diagnostics around steps 900–1,000;
 - identical dimensions and schedules with unique-table counts 1, 4, 8, and 24;
@@ -139,7 +176,9 @@ The next controlled work requires:
 - automatic best-checkpoint restoration;
 - Pythia-1.4B Full and parameter-matched LoRA baselines;
 - multiple seeds;
-- untouched-pretraining retention and free-generation evaluation.
+- untouched-test, pretrained-retention, and free-generation evaluation;
+- identical-hardware systems measurements;
+- ATE parameter accounting, neutral-initialization validation, and first controlled run.
 
 ## Documentation
 
@@ -147,6 +186,7 @@ The next controlled work requires:
 - [Experimental Evidence Ledger](docs/experimental-evidence.md)
 - [Current Research Roadmap](docs/roadmap.md)
 - [Dated Research Log](docs/research-log/README.md)
+- [2026-07-22 Locked UltraChat Plasticity and ATE Analysis](docs/research-log/2026-07-22-ultrachat-plasticity-ate.md)
 - [2026-07-20 Pythia Follow-up Variants](docs/research-log/2026-07-20-pythia-follow-up-variants.md)
 - [2026-07-20 Pythia V3 Chat Evaluation](docs/research-log/2026-07-20-pythia-v3-chat-evaluation.md)
 - [2026-07-19 Pythia Variant Sweep](docs/research-log/2026-07-19-pythia-variant-sweep.md)
