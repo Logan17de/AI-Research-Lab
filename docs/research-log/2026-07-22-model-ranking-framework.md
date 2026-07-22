@@ -4,7 +4,8 @@
 
 - **Locked UltraChat validation metrics:** VALID for the recorded checkpoints
 - **Matched-token ranking:** VALID at step 200 / 22,094,998 processed tokens
-- **ATE ranking:** PROVISIONAL because training is only recorded through step 200
+- **Fresh ATE h1/l1 ranking:** VALID through its latest completed evaluation at step 400; model-quality interpretation remains provisional
+- **Sequential ATE ranking:** EXPLORATORY because h1/l2 inherits prior h1/l1 training and h2/l2 has only one early record
 - **Parameter-efficiency track:** CROSS-BENCHMARK INTERPRETATION until matched UltraChat MOD and LoRA baselines exist
 - **Architectural-novelty track:** RESEARCH INTERPRETATION, not a numerical benchmark
 - **Final model ranking:** PENDING untouched-test, free-generation, retention, identical-hardware, and multi-seed evaluation
@@ -13,18 +14,18 @@ This framework prevents results from different datasets and evaluation protocols
 
 ## Track A — Absolute Quality on Locked UltraChat
 
-All four runs use the same locked dataset, token order, sequence length 1,024, effective batch size 160, and evaluation schedule.
+All four fresh-run comparisons use the same locked dataset, token order, sequence length 1,024, and effective batch size 160. Evaluation cadence differs for some later ATE runs and is reported explicitly in the expansion-sweep entry.
 
 ### Best recorded validation checkpoints
 
 | Rank | Model | Best assistant PPL | Step | Status |
 |---:|---|---:|---:|---|
 | 1 | Pythia-2.8B full FT | **3.2402** | 1,450 | current benchmark |
-| 2 | ATE h1/l1 | **3.5475** | 200 | provisional early result |
+| 2 | ATE h1/l1 | **3.4602** | 400 | strongest fresh Pythia-1.4B-derived result |
 | 3 | MOD + plastic-24 | 3.5511 | 500 | active nearly full-backbone hybrid |
 | 4 | MOD + plastic-4 | 3.5608 | 950 | completed limited-plasticity run |
 
-ATE, plastic-24, and plastic-4 are close at their reported best checkpoints. Their training maturity differs, so this table is a current snapshot rather than a final convergence comparison.
+Fresh ATE h1/l1 continues improving through its latest completed evaluation. It is 2.56% lower in assistant PPL than plastic-24 and 2.83% lower than plastic-4 at their respective best checkpoints. Training maturity still differs, so this is a current validation snapshot rather than a final convergence comparison.
 
 ### Matched step-200 comparison
 
@@ -45,6 +46,21 @@ The scientific questions are different:
 - **ATE:** Can a pretrained 1.4B model be expanded in width and depth to recover part of the larger model's capacity and quality?
 
 Therefore, Pythia-2.8B is the absolute-quality control, while ATE is the architecture result.
+
+## Track A2 — Sequential Architecture Expansion
+
+This track is separated from fresh-run ranking because later architectures inherit trained ATE checkpoints and restart their local optimizer/data schedule.
+
+| Rank | Model | Inherited baseline | Best assistant PPL | Local step | Status |
+|---:|---|---:|---:|---:|---|
+| 1 | ATE h1/l2 | 3.4602 from h1/l1 | **3.4358** | 450 | valid checkpoint; causal depth gain unproven |
+| — | ATE h2/l2 | not fully verified | 3.4922 | 10 | insufficient evidence; no checkpoint |
+
+ATE h1/l2 improves over its inherited h1/l1 value by approximately 0.71%, but the best checkpoint represents about 94.0M cumulative source-plus-local training tokens. A no-expansion h1/l1 continuation with the same reset and additional-token budget is required to isolate the contribution of the second added layer.
+
+After local step 450, h1/l2 validation PPL regresses 7.60% to 3.6970 at step 600 while training PPL falls from 3.4007 to 2.7604. This is severe generalization collapse or overfitting, not a recorded numerical failure.
+
+See the [ATE Sequential Expansion Sweep](2026-07-22-ate-expansion-sweep.md).
 
 ## Track B — Parameter-Efficient Adaptation
 
@@ -81,7 +97,7 @@ This track describes research contribution; it is not a claim of empirical super
 | Category | Current winner | Meaning |
 |---|---|---|
 | Benchmark champion | Pythia-2.8B full FT | lowest locked-UltraChat validation PPL |
-| Architecture winner | ATE h1/l1 | strongest Pythia-1.4B-derived system at the matched 22.1M-token budget |
+| Architecture winner | ATE family | h1/l1 leads the matched fresh track; h1/l2 is the best observed sequential checkpoint |
 | Parameter-efficiency winner | Shared MOD | leading parameter-efficient family from the earlier matched evidence |
 | Hybrid trade-off winner | MOD + plastic-4 | near plastic-24 quality with far less backbone movement |
 | Useful but inefficient ablation | MOD + plastic-24 | demonstrates the limited gain from broad plasticity |
@@ -92,9 +108,11 @@ The current ATE h1/l1 model expands Pythia-1.4B from 1,414,647,808 to 1,640,127,
 
 ATE is therefore **not PEFT in this run**. Its contribution is architecture expansion, neutral initialization, optimizer separation, and the reuse of a smaller pretrained starting point rather than minimal trainable parameter count.
 
-The canonical claim is:
+The canonical claims are:
 
-> ATE is currently the strongest Pythia-1.4B-derived system under the locked UltraChat benchmark at the matched 22,094,998-token budget.
+> ATE h1/l1 is the strongest Pythia-1.4B-derived fresh-run system under the locked UltraChat benchmark at the matched 22,094,998-token budget.
+
+> ATE h1/l2 is the best observed Pythia-1.4B-derived sequential checkpoint, but its 3.4358 result cannot yet be attributed specifically to added depth.
 
 ## Three Research Hypotheses
 
@@ -106,11 +124,13 @@ These are now separate research directions, not incremental variants competing f
 
 ## Required Evidence Before Final Publication
 
-1. Continue ATE beyond step 200 and record its convergence or plateau.
-2. Run pure frozen Shared MOD and a parameter-matched LoRA baseline on the locked manifest.
-3. Evaluate selected checkpoints on the untouched test split only after model selection.
-4. Run the scored free-generation suite.
-5. Measure pretrained-knowledge retention and catastrophic forgetting.
-6. Repeat experiments across multiple seeds.
-7. Measure systems performance on identical hardware.
-8. Keep every dataset generation in a separate result series.
+1. Evaluate fresh h1/l1 at its next scheduled checkpoint and preserve its full curve.
+2. Run a no-expansion h1/l1 continuation from the same source, with the same reset and additional-token budget as h1/l2.
+3. Persist source checkpoint identity and pre-update step-zero equivalence for every incremental expansion.
+4. Run pure frozen Shared MOD and a parameter-matched LoRA baseline on the locked manifest.
+5. Evaluate selected checkpoints on the untouched test split only after model selection.
+6. Run the scored free-generation suite.
+7. Measure pretrained-knowledge retention and catastrophic forgetting.
+8. Repeat experiments across multiple seeds.
+9. Measure systems performance on identical hardware.
+10. Keep every dataset generation in a separate result series.
