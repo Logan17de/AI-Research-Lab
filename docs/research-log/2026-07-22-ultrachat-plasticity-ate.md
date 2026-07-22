@@ -1,5 +1,7 @@
 # 2026-07-22 — Locked UltraChat Plasticity Benchmark and ATE Launch
 
+> **Later same-date update:** This launch snapshot preserves the evidence available before ATE produced metrics. ATE subsequently reached assistant PPL 3.5475 at step 200, and plastic-24 reached 3.5511 at step 500. See the [dated Model Ranking Framework](2026-07-22-model-ranking-framework.md) for the current comparison. Historical statements below are intentionally retained.
+
 ## Evidence Status
 
 - **Dataset contract:** VALID
