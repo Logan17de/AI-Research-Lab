@@ -12,9 +12,9 @@ Every result is assigned a status:
 
 ## Current Valid Evidence
 
-### 2026-07-22 — Locked UltraChat benchmark and ATE result
+### 2026-07-22 — Locked UltraChat, ATE, and sequential expansion
 
-**Status: VALID dataset and checkpoint metrics; EXPLORATORY architecture comparison; ATE provisional**
+**Status: VALID dataset and checkpoint metrics; EXPLORATORY architecture comparison; sequential causal attribution unresolved**
 
 The authoritative manifest contains 75,000 English UltraChat conversations:
 
@@ -24,40 +24,48 @@ The authoritative manifest contains 75,000 English UltraChat conversations:
 | Validation | 1,500 | 1,019,539 |
 | Test | 1,500 | 1,033,646 |
 
-All measured runs used the same locked train/validation files, order, seed 42, sequence length 1,024, effective batch size 160, and evaluation interval.
+All fresh-run comparisons use the same locked train/validation files, order, seed 42, sequence length 1,024, and effective batch size 160.
 
-| Rank | Variant | Snapshot status | Best step | Best assistant PPL | Top-1 | Plastic drift |
-|---:|---|---|---:|---:|---:|---:|
-| 1 | Pythia-2.8B full FT | stopped at 1,450 | 1,450 | **3.2402** | 68.24% | — |
-| 2 | ATE h1/l1 | active through 200 | 200 | **3.5475** | 66.60% | 0.000361 |
-| 3 | Pythia-1.4B MOD + plastic-24 | active through 500 | 500 | **3.5511** | 66.65% | 0.002010 |
-| 4 | Pythia-1.4B MOD + plastic-4 | stopped at 1,350 | 950 | **3.5608** | 66.61% | 0.001594 |
+#### Fresh-run best checkpoints
 
-At matched step 200 / 22,094,998 tokens:
+| Rank | Variant | Best step | Best assistant PPL | Top-1 | Plastic drift |
+|---:|---|---:|---:|---:|---:|
+| 1 | Pythia-2.8B full FT | 1,450 | **3.2402** | 68.24% | — |
+| 2 | ATE h1/l1 | 400 | **3.4602** | 67.05% | 0.000565 |
+| 3 | Pythia-1.4B MOD + plastic-24 | 500 | **3.5511** | 66.65% | 0.002010 |
+| 4 | Pythia-1.4B MOD + plastic-4 | 950 | **3.5608** | 66.61% | 0.001594 |
 
-| Rank | Variant | Assistant PPL |
-|---:|---|---:|
-| 1 | Pythia-2.8B full FT | **3.3908** |
-| 2 | ATE h1/l1 | **3.5475** |
-| 3 | MOD + plastic-24 | 3.6520 |
-| 4 | MOD + plastic-4 | 3.6970 |
+At matched step 200 / 22,094,998 tokens, assistant PPL is 3.3908 for 2.8B full FT, 3.5475 for h1/l1, 3.6520 for plastic-24, and 3.6970 for plastic-4.
 
-Valid observations:
+Valid fresh-run observations:
 
-- Pythia-2.8B full FT remains the absolute-quality and sample-efficiency leader;
-- ATE is the strongest Pythia-1.4B-derived system at the matched token budget;
-- ATE reached the mature plasticity range by step 200 without recorded instability;
-- ATE expands 1,414,647,808 base parameters to 1,640,127,360 total parameters by adding 225,479,552 parameters;
-- all ATE parameters are trainable under the current quadratic-plasticity configuration, so this run is not PEFT;
-- plastic-4 selected 201,437,184 base parameters and reached its validation optimum at step 950;
-- plastic-24 selected 1,311,625,216 base parameters, approximately 92.7% of Pythia-1.4B;
-- plastic-24 is therefore a broad hybrid, not a clean strongly parameter-efficient baseline;
-- plastic-24 improves over plastic-4 by only 0.0097 assistant PPL at their best recorded checkpoints;
-- recorded throughput differs substantially, but GPU environments also differ, so speed multipliers are not controlled evidence.
+- Pythia-2.8B full FT remains the absolute-quality and sample-efficiency leader.
+- ATE h1/l1 is the strongest fresh Pythia-1.4B-derived system.
+- H1/l1 improves from 3.5475 at step 200 to 3.4602 at step 400.
+- H1/l1 first-answer accuracy improves to 53.23% and top-1 to 67.05%.
+- H1/l1 drift remains low at 0.000565.
+- The next h1/l1 evaluation at step 500 is absent; a plateau is not established.
+- Plastic-24 remains a broad hybrid rather than a strongly parameter-efficient baseline.
+- Plastic-4 remains the clearer limited-plasticity efficiency result.
 
-No free-generation or pretrained-retention result is available for these checkpoints. No pure frozen-MOD, Pythia-1.4B full-FT, LoRA, or multi-seed control exists on the locked manifest yet. The test split remains untouched.
+#### Sequential expansion evidence
 
-See the [2026-07-22 Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md), the original [Locked UltraChat Plasticity and ATE Launch](research-log/2026-07-22-ultrachat-plasticity-ate.md), and the [machine-readable snapshot](../results/pythia-ultrachat-plasticity-2026-07-22.csv).
+| Variant | Inherited baseline | Best assistant PPL | Local best step | Evidence status |
+|---|---:|---:|---:|---|
+| ATE h1/l2 | 3.4602 from h1/l1 | **3.4358** | 450 | valid checkpoint; architecture attribution exploratory |
+| ATE h2/l2 | not fully verified | 3.4922 | 10 | insufficient; one row and no checkpoint |
+
+H1/l2's stored starting evaluation exactly matches h1/l1 step 400, consistent with checkpoint inheritance and neutral added-layer initialization. It improves the inherited value by approximately 0.71%.
+
+This does not isolate the contribution of added depth. Assuming the h1/l1 step-400 source, the h1/l2 best represents 94,021,074 cumulative source-plus-local tokens. A matched h1/l1 continuation with the same optimizer reset, data restart, and additional-token budget is required.
+
+H1/l2 peaks at local step 450, then validation PPL regresses 7.60% to 3.6970 at step 600 while training PPL falls from 3.4007 to 2.7604. Drift rises smoothly to 0.000583 and no numerical failure is recorded. This is severe overfitting/generalization collapse rather than numerical instability.
+
+The saved h1/l2 and h2/l2 configs do not preserve a usable incremental-source path. Exact source checkpoint identity or hash and an explicit pre-update step-zero evaluation are required for reproducible expansion provenance.
+
+No free-generation or pretrained-retention result is available for these checkpoints. No pure frozen-MOD, Pythia-1.4B full-FT, LoRA, or multi-seed control exists on the locked manifest. The test split remains untouched.
+
+See the [ATE Sequential Expansion Sweep](research-log/2026-07-22-ate-expansion-sweep.md), [Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md), and [machine-readable expansion metrics](../results/pythia-ate-expansion-2026-07-22.csv).
 
 ### 2026-07-20 — Follow-up variants and direct-answer V3
 
@@ -331,6 +339,7 @@ Not established:
 - analytical MAC estimates predict measured latency;
 - lower teacher-forced PPL means healthy free generation;
 - ATE preserves pretrained knowledge or provides favorable end-to-end efficiency;
+- the h1/l2 validation improvement is caused specifically by the added layer rather than extra training and schedule reset;
 - current results establish continual-learning superiority.
 
 ## Evidence Required Next
