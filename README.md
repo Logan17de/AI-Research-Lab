@@ -76,25 +76,24 @@ A deterministic English UltraChat manifest now provides the cleanest large-data 
 
 The manifest fixes filtering, category quotas, tokenizer identity, file hashes, token order, sample order, seed, and loader behavior.
 
-Current results:
+Current best validation checkpoints:
 
-| Variant | Snapshot | Best assistant PPL | Best step | Interpretation |
-|---|---|---:|---:|---|
-| Pythia-1.4B MOD + plastic-4 | completed to 1,350 | **3.5608** | 950 | limited tail plasticity; mild late plateau |
-| Pythia-1.4B MOD + plastic-24 | active through 240 | **3.6520** | 200 | early snapshot; nearly full-backbone hybrid |
-| Pythia-2.8B full FT | completed to 1,450 | **3.2402** | 1,450 | current validation leader |
+| Rank | Variant | Snapshot | Assistant PPL | Best step | Interpretation |
+|---:|---|---|---:|---:|---|
+| 1 | Pythia-2.8B full FT | stopped at 1,450 | **3.2402** | 1,450 | absolute-quality benchmark |
+| 2 | ATE h1/l1 | active through 200 | **3.5475** | 200 | provisional architecture winner |
+| 3 | Pythia-1.4B MOD + plastic-24 | active through 500 | 3.5511 | 500 | nearly full-backbone hybrid |
+| 4 | Pythia-1.4B MOD + plastic-4 | stopped at 1,350 | 3.5608 | 950 | limited-plasticity trade-off winner |
 
-At matched step 200, assistant PPL was 3.6970, 3.6520, and 3.3908 respectively.
+At matched step 200 / 22,094,998 processed tokens, assistant PPL ranked: Pythia-2.8B full FT 3.3908, ATE 3.5475, plastic-24 3.6520, and plastic-4 3.6970.
 
-The 2.8B dense model reached 3.5014 by step 100, already below the plastic-4 model's eventual best. This means full fine-tuning is currently more sample-efficient on the locked objective.
+The 2.8B dense model remains the absolute-quality control. ATE is the strongest Pythia-1.4B-derived system at the matched token budget, but its status is provisional because only 200 steps are recorded. The current quadratic-plasticity ATE configuration trains all 1.64B parameters, so it is architecture expansion rather than PEFT.
 
-Plastic-4 selected 201.4M original base parameters. Plastic-24 selected 1.312B—approximately 92.7% of Pythia-1.4B—so plastic-24 should not be presented as a strongly parameter-efficient baseline.
+Plastic-4 selected 201.4M original base parameters plus MOD. Plastic-24 selected 1.312B—approximately 92.7% of Pythia-1.4B—before MOD. Plastic-24 improves best assistant PPL by only 0.0097, so plastic-4 remains the clearer efficiency result.
 
-Recorded throughput favored the smaller hybrids, but the runs used different reported GPU environments. No controlled speed multiplier is claimed.
+Recorded throughput used different GPU environments; no controlled speed multiplier is claimed. The untouched test split remains sealed for final model selection.
 
-The new Adaptive Transformer Expansion branch has also been implemented and initialized. Its first run has no metrics yet, so ATE remains **Proposed / Initialized**, not a model-quality result.
-
-See the full [2026-07-22 Locked UltraChat Plasticity and ATE Analysis](docs/research-log/2026-07-22-ultrachat-plasticity-ate.md) and [machine-readable snapshot](results/pythia-ultrachat-plasticity-2026-07-22.csv).
+See the [2026-07-22 Model Ranking Framework](docs/research-log/2026-07-22-model-ranking-framework.md), the original [Locked UltraChat Plasticity and ATE Launch Analysis](docs/research-log/2026-07-22-ultrachat-plasticity-ate.md), and the [machine-readable snapshot](results/pythia-ultrachat-plasticity-2026-07-22.csv).
 
 ## Qualitative Chat Test — 2026-07-19
 
@@ -149,7 +148,7 @@ Established:
 - the 2.8B dense baseline remains stronger on held-out perplexity;
 - on locked UltraChat, plastic-4 reaches 3.5608 while 2.8B full FT reaches 3.2402;
 - limited plasticity narrows but does not close the quality gap;
-- ATE is implemented but has no measured result.
+- ATE reaches 3.5475 assistant PPL at step 200 and is the strongest Pythia-1.4B-derived locked-UltraChat result at the matched token budget;
 
 Not established:
 
@@ -159,7 +158,7 @@ Not established:
 - MOD matches or beats fully fine-tuned Pythia-2.8B;
 - MOD or controlled plasticity preserves pretrained knowledge better;
 - broad plasticity remains parameter-efficient;
-- ATE improves quality, efficiency, or retention;
+- ATE preserves pretrained knowledge better or provides a favorable end-to-end efficiency trade-off;
 - current results prove continual-learning superiority.
 
 ## Next Experiment
@@ -178,7 +177,7 @@ The next controlled work requires:
 - multiple seeds;
 - untouched-test, pretrained-retention, and free-generation evaluation;
 - identical-hardware systems measurements;
-- ATE parameter accounting, neutral-initialization validation, and first controlled run.
+- continued ATE training, scored free generation, retention evaluation, and comparison against matched frozen-MOD and LoRA controls.
 
 ## Documentation
 
@@ -186,6 +185,7 @@ The next controlled work requires:
 - [Experimental Evidence Ledger](docs/experimental-evidence.md)
 - [Current Research Roadmap](docs/roadmap.md)
 - [Dated Research Log](docs/research-log/README.md)
+- [2026-07-22 Model Ranking Framework](docs/research-log/2026-07-22-model-ranking-framework.md)
 - [2026-07-22 Locked UltraChat Plasticity and ATE Analysis](docs/research-log/2026-07-22-ultrachat-plasticity-ate.md)
 - [2026-07-20 Pythia Follow-up Variants](docs/research-log/2026-07-20-pythia-follow-up-variants.md)
 - [2026-07-20 Pythia V3 Chat Evaluation](docs/research-log/2026-07-20-pythia-v3-chat-evaluation.md)
