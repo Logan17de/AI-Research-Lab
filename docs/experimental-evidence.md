@@ -12,9 +12,9 @@ Every result is assigned a status:
 
 ## Current Valid Evidence
 
-### 2026-07-22 — Locked UltraChat plasticity benchmark
+### 2026-07-22 — Locked UltraChat benchmark and ATE result
 
-**Status: VALID dataset and metrics; EXPLORATORY architecture comparison**
+**Status: VALID dataset and checkpoint metrics; EXPLORATORY architecture comparison; ATE provisional**
 
 The authoritative manifest contains 75,000 English UltraChat conversations:
 
@@ -26,41 +26,38 @@ The authoritative manifest contains 75,000 English UltraChat conversations:
 
 All measured runs used the same locked train/validation files, order, seed 42, sequence length 1,024, effective batch size 160, and evaluation interval.
 
-| Variant | Snapshot status | Best step | Best assistant PPL | Top-1 | Plastic drift |
-|---|---|---:|---:|---:|---:|
-| Pythia-1.4B MOD + plastic-4 | stopped at 1,350 | 950 | **3.5608** | 66.61% | 0.001594 |
-| Pythia-1.4B MOD + plastic-24 | active through 240 | 200 | **3.6520** | 66.09% | 0.001207 |
-| Pythia-2.8B full FT | stopped at 1,450 | 1,450 | **3.2402** | 68.24% | — |
+| Rank | Variant | Snapshot status | Best step | Best assistant PPL | Top-1 | Plastic drift |
+|---:|---|---|---:|---:|---:|---:|
+| 1 | Pythia-2.8B full FT | stopped at 1,450 | 1,450 | **3.2402** | 68.24% | — |
+| 2 | ATE h1/l1 | active through 200 | 200 | **3.5475** | 66.60% | 0.000361 |
+| 3 | Pythia-1.4B MOD + plastic-24 | active through 500 | 500 | **3.5511** | 66.65% | 0.002010 |
+| 4 | Pythia-1.4B MOD + plastic-4 | stopped at 1,350 | 950 | **3.5608** | 66.61% | 0.001594 |
 
-At matched step 200:
+At matched step 200 / 22,094,998 tokens:
 
-| Variant | Assistant PPL |
-|---|---:|
-| MOD + plastic-4 | 3.6970 |
-| MOD + plastic-24 | 3.6520 |
-| Pythia-2.8B full FT | **3.3908** |
+| Rank | Variant | Assistant PPL |
+|---:|---|---:|
+| 1 | Pythia-2.8B full FT | **3.3908** |
+| 2 | ATE h1/l1 | **3.5475** |
+| 3 | MOD + plastic-24 | 3.6520 |
+| 4 | MOD + plastic-4 | 3.6970 |
 
 Valid observations:
 
+- Pythia-2.8B full FT remains the absolute-quality and sample-efficiency leader;
+- ATE is the strongest Pythia-1.4B-derived system at the matched token budget;
+- ATE reached the mature plasticity range by step 200 without recorded instability;
+- ATE expands 1,414,647,808 base parameters to 1,640,127,360 total parameters by adding 225,479,552 parameters;
+- all ATE parameters are trainable under the current quadratic-plasticity configuration, so this run is not PEFT;
 - plastic-4 selected 201,437,184 base parameters and reached its validation optimum at step 950;
-- plastic-4 then showed mild overfitting while its output-MOD/base logit ratio continued rising;
 - plastic-24 selected 1,311,625,216 base parameters, approximately 92.7% of Pythia-1.4B;
 - plastic-24 is therefore a broad hybrid, not a clean strongly parameter-efficient baseline;
-- Pythia-2.8B full FT is the validation leader and reached 3.5014 by step 100, below plastic-4's eventual best;
-- broad plasticity produced non-uniform drift, with the largest step-200 group drift near layer 8 rather than the final layer;
+- plastic-24 improves over plastic-4 by only 0.0097 assistant PPL at their best recorded checkpoints;
 - recorded throughput differs substantially, but GPU environments also differ, so speed multipliers are not controlled evidence.
 
-No free-generation or pretrained-retention result was present for these new checkpoints. No pure frozen-MOD, Pythia-1.4B full-FT, LoRA, or multi-seed control exists on the locked manifest yet.
+No free-generation or pretrained-retention result is available for these checkpoints. No pure frozen-MOD, Pythia-1.4B full-FT, LoRA, or multi-seed control exists on the locked manifest yet. The test split remains untouched.
 
-See [2026-07-22 Locked UltraChat Plasticity Benchmark](research-log/2026-07-22-ultrachat-plasticity-ate.md) and the [machine-readable snapshot](../results/pythia-ultrachat-plasticity-2026-07-22.csv).
-
-### 2026-07-22 — Adaptive Transformer Expansion launch
-
-**Status: PROPOSED / INITIALIZED**
-
-ATE is implemented as a separate width/depth expansion path. The current run directory contains only a validated 450-steps-per-epoch cache and no metrics, config, checkpoint, or drift record.
-
-ATE quality, convergence, efficiency, and retention remain unmeasured.
+See the [2026-07-22 Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md), the original [Locked UltraChat Plasticity and ATE Launch](research-log/2026-07-22-ultrachat-plasticity-ate.md), and the [machine-readable snapshot](../results/pythia-ultrachat-plasticity-2026-07-22.csv).
 
 ### 2026-07-20 — Follow-up variants and direct-answer V3
 
@@ -333,7 +330,7 @@ Not established:
 - MOD generalizes algorithmic rules as well as dense training;
 - analytical MAC estimates predict measured latency;
 - lower teacher-forced PPL means healthy free generation;
-- ATE improves quality, efficiency, or retention;
+- ATE preserves pretrained knowledge or provides favorable end-to-end efficiency;
 - current results establish continual-learning superiority.
 
 ## Evidence Required Next
