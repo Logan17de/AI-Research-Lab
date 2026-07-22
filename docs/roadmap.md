@@ -103,8 +103,9 @@ Run from clean starting checkpoints:
 4. Pythia-2.8B untouched
 5. Pythia-2.8B full fine-tuning — **completed through step 1,450 on locked UltraChat**
 6. Pythia-1.4B MOD + final-four-layer plasticity — **completed through step 1,350**
-7. Pythia-1.4B broad plastic-24 — **active; early snapshot only**
-8. parameter-matched LoRA or adapter baseline
+7. Pythia-1.4B broad plastic-24 — **active through step 500**
+8. ATE h1/l1 — **active through step 200; provisional architecture result**
+9. parameter-matched LoRA or adapter baseline
 
 Hold rendering, data, target tokens, schedules, evaluation, and decoding fixed where scientifically appropriate.
 
@@ -128,11 +129,14 @@ Measure:
 Current locked-manifest snapshot:
 
 - MOD + plastic-4 best assistant PPL: **3.5608** at step 950;
-- MOD + plastic-24 early assistant PPL: **3.6520** at step 200;
+- ATE h1/l1 assistant PPL: **3.5475** at step 200;
+- MOD + plastic-24 assistant PPL: **3.5511** at step 500;
 - Pythia-2.8B full-FT assistant PPL: **3.2402** at step 1,450;
-- at matched step 200: 3.6970 / 3.6520 / 3.3908 respectively.
+- at matched step 200: full FT 3.3908, ATE 3.5475, plastic-24 3.6520, and plastic-4 3.6970.
 
-Dense 2.8B currently wins sample efficiency. Retention and generation quality remain unmeasured for these checkpoints.
+Dense 2.8B currently wins absolute quality and sample efficiency. ATE is the strongest Pythia-1.4B-derived result at the matched token budget, but all 1.64B parameters are trainable in the current quadratic-plasticity run. Retention and generation quality remain unmeasured for these checkpoints.
+
+See the [2026-07-22 Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md).
 
 ## Gate 6 — Systems Benchmark
 
@@ -183,9 +187,9 @@ See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-swe
 
 ## Gate 8 — Continual Expansion
 
-**Status: ATE implemented and initialized; no training metrics yet**
+**Status: ATE active through step 200; early validation result is provisional**
 
-The first ATE h1/l1 directory currently contains only a validated 450-steps-per-epoch cache. Do not assign a performance status until metrics, neutral-initialization verification, checkpoints, and free generations exist.
+ATE h1/l1 expands Pythia-1.4B from 1,414,647,808 to 1,640,127,360 parameters by adding one attention head, one layer, and 225,479,552 parameters. At step 200 it reached assistant PPL 3.5475, combined PPL 3.5328, and top-1 66.60% without recorded instability. Because the current quadratic-plasticity configuration trains the entire expanded model, ATE is an architecture-growth experiment rather than PEFT. Continue training and require free-generation and retention evidence before assigning a final performance status.
 
 Only after Gates 2–7:
 
