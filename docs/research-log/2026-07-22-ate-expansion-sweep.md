@@ -21,8 +21,8 @@ All runs use:
 - effective batch size 160;
 - seed 42;
 - strict sample order and zero shuffle buffer;
-- new-parameter learning rate (3\times10^{-4});
-- quadratic base plasticity with maximum base learning rate (1\times10^{-5});
+- new-parameter learning rate 3e-4;
+- quadratic base plasticity with maximum base learning rate 1e-5;
 - seven configured epochs.
 
 The untouched test split remains unused.
