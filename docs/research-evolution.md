@@ -1,6 +1,6 @@
 # Research Evolution
 
-**Last updated:** 2026-07-20
+**Last updated:** 2026-07-22
 
 This file records major research milestones in chronological order. Detailed experimental events belong in the [dated research log](research-log/README.md).
 
@@ -147,6 +147,28 @@ The owner-confirmed V3 chat test exposed a new boundary: reasoning tags were les
 
 See [2026-07-20 Follow-up Variants](research-log/2026-07-20-pythia-follow-up-variants.md) and [V3 Chat Evaluation](research-log/2026-07-20-pythia-v3-chat-evaluation.md).
 
+## 2026-07-21 to 2026-07-22 — Locked UltraChat, Controlled Plasticity, and ATE
+
+The benchmark moved to a locked English UltraChat subset with 75,000 conversations: 72,000 train, 1,500 validation, and 1,500 untouched test examples. The manifest fixes sample order, tokenizer, split hashes, category quotas, and data-loader behavior.
+
+Three matched-data training paths were inspected:
+
+- Pythia-1.4B + MOD + final-four-layer plasticity reached assistant PPL **3.5608** at step 950;
+- Pythia-1.4B + MOD + broad 24-layer plasticity reached **3.6520** at step 200 in an active early snapshot;
+- Pythia-2.8B full fine-tuning reached **3.2402** at step 1,450 and was still improving.
+
+At matched step 200, the three assistant PPL values were 3.6970, 3.6520, and 3.3908 respectively.
+
+The final-four hybrid processed tokens quickly and changed only 201.4M selected base parameters, but it formed a mild validation plateau. The 2.8B dense model reached 3.5014 by step 100, already below the hybrid's eventual best, demonstrating stronger sample efficiency on this objective.
+
+Broad plastic-24 slightly improved early learning over plastic-4, but it made 1.312B original base parameters plastic. It is therefore a nearly full-backbone hybrid rather than a strongly parameter-efficient baseline.
+
+The Adaptive Transformer Expansion branch was also implemented and initialized for an added-head/added-layer run. Only the step cache exists; no ATE training metric or model-quality result is available yet.
+
+**Current position:** limited tail plasticity narrows the quality gap but does not close it. Dense Pythia-2.8B remains the locked-validation leader. Retention, free generation, same-hardware systems tests, pure frozen MOD, Pythia-1.4B full FT, LoRA, and multiple seeds remain required.
+
+See [2026-07-22 Locked UltraChat Plasticity Benchmark and ATE Launch](research-log/2026-07-22-ultrachat-plasticity-ate.md).
+
 ## Future Branches
 
 These remain proposed, not validated:
@@ -156,8 +178,8 @@ These remain proposed, not validated:
 - parameter- and compute-matched baselines;
 - progressive frozen MODs;
 - equal-capacity reusable versus isolated modules;
-- width expansion;
-- depth expansion;
+- ATE width/depth evaluation;
+- expansion-versus-MOD and expansion-versus-LoRA controls;
 - multi-domain routing;
 - Capability Gap Recovery on clean modern checkpoints;
 - governed memory and reasoning integration.
