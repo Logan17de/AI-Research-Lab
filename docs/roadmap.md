@@ -1,8 +1,8 @@
 # Research Roadmap
 
-**Last updated:** 2026-07-20
+**Last updated:** 2026-07-22
 
-The active benchmark is **frozen Pythia-1.4B + Token MOD versus fully fine-tuned Pythia-2.8B**, followed by controlled shared-versus-layer-unique table ablations.
+The active benchmark now uses the locked 75,000-conversation English UltraChat manifest to compare frozen MOD, controlled base plasticity, dense full fine-tuning, and Adaptive Transformer Expansion.
 
 The repaired GPT-2 pipeline remains the causal-validation foundation. Its detailed gates and evidence reset are preserved in the [2026-07-16 audit](research-log/2026-07-16-pipeline-audit.md).
 
@@ -52,6 +52,18 @@ Continue toward a substantially larger, cleaner dataset with:
 - balanced factual, procedural, compositional, and reasoning categories;
 - no train/eval concept leakage in the true held-out subsets.
 
+### Locked UltraChat generation
+
+**Status: completed and active**
+
+- 72,000 train conversations / 49,777,171 tokens;
+- 1,500 validation conversations / 1,019,539 tokens;
+- 1,500 untouched test conversations / 1,033,646 tokens;
+- deterministic filtering, category quotas, hashes, and strict sample order;
+- identical manifest enforced across comparison runs.
+
+The actual manifest target is 75,000 conversations, even though the default README example describes 50,000.
+
 ## Gate 3 — Evaluation Suite
 
 **Status: active**
@@ -89,8 +101,10 @@ Run from clean starting checkpoints:
 2. Pythia-1.4B full fine-tuning
 3. Pythia-1.4B + Token MOD
 4. Pythia-2.8B untouched
-5. Pythia-2.8B full fine-tuning — **completed for the current chain-of-thought split**
-6. parameter-matched LoRA or adapter baseline
+5. Pythia-2.8B full fine-tuning — **completed through step 1,450 on locked UltraChat**
+6. Pythia-1.4B MOD + final-four-layer plasticity — **completed through step 1,350**
+7. Pythia-1.4B broad plastic-24 — **active; early snapshot only**
+8. parameter-matched LoRA or adapter baseline
 
 Hold rendering, data, target tokens, schedules, evaluation, and decoding fixed where scientifically appropriate.
 
@@ -111,6 +125,15 @@ Measure:
 
 > Can 1.466B frozen Pythia + Token MOD approach the useful behavior of fully fine-tuned 2.775B Pythia without sacrificing pretrained capability?
 
+Current locked-manifest snapshot:
+
+- MOD + plastic-4 best assistant PPL: **3.5608** at step 950;
+- MOD + plastic-24 early assistant PPL: **3.6520** at step 200;
+- Pythia-2.8B full-FT assistant PPL: **3.2402** at step 1,450;
+- at matched step 200: 3.6970 / 3.6520 / 3.3908 respectively.
+
+Dense 2.8B currently wins sample efficiency. Retention and generation quality remain unmeasured for these checkpoints.
+
 ## Gate 6 — Systems Benchmark
 
 Measure, rather than estimate:
@@ -124,6 +147,9 @@ Measure, rather than estimate:
 - wall-clock cost.
 
 Compare measured results with the analytical estimate of approximately 25.84M additional MACs per generated token.
+
+Recorded median throughput was 13,391 tokens/s for plastic-4, 8,452 for plastic-24, and 3,355 for 2.8B full FT. These runs reported different GPU capacities and are not a controlled speed comparison. Re-run on identical hardware before publishing a multiplier.
+
 
 ## Gate 7 — Ablations and Reproducibility
 
@@ -156,6 +182,10 @@ Required next:
 See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-sweep.md) and [2026-07-20 Follow-up Variants](research-log/2026-07-20-pythia-follow-up-variants.md).
 
 ## Gate 8 — Continual Expansion
+
+**Status: ATE implemented and initialized; no training metrics yet**
+
+The first ATE h1/l1 directory currently contains only a validated 450-steps-per-epoch cache. Do not assign a performance status until metrics, neutral-initialization verification, checkpoints, and free generations exist.
 
 Only after Gates 2–7:
 
