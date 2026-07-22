@@ -104,8 +104,10 @@ Run from clean starting checkpoints:
 5. Pythia-2.8B full fine-tuning — **completed through step 1,450 on locked UltraChat**
 6. Pythia-1.4B MOD + final-four-layer plasticity — **completed through step 1,350**
 7. Pythia-1.4B broad plastic-24 — **active through step 500**
-8. ATE h1/l1 — **active through step 200; provisional architecture result**
-9. parameter-matched LoRA or adapter baseline
+8. ATE h1/l1 — **metrics through step 490; best completed evaluation at step 400**
+9. Sequential ATE h1/l2 — **stopped/inspected through local step 600; best at 450**
+10. ATE h2/l2 — **one early record at step 10; insufficient evidence**
+11. parameter-matched LoRA or adapter baseline
 
 Hold rendering, data, target tokens, schedules, evaluation, and decoding fixed where scientifically appropriate.
 
@@ -129,14 +131,15 @@ Measure:
 Current locked-manifest snapshot:
 
 - MOD + plastic-4 best assistant PPL: **3.5608** at step 950;
-- ATE h1/l1 assistant PPL: **3.5475** at step 200;
+- fresh ATE h1/l1 assistant PPL: **3.4602** at step 400;
+- sequential ATE h1/l2 assistant PPL: **3.4358** at local step 450, reported separately from fresh runs;
 - MOD + plastic-24 assistant PPL: **3.5511** at step 500;
 - Pythia-2.8B full-FT assistant PPL: **3.2402** at step 1,450;
 - at matched step 200: full FT 3.3908, ATE 3.5475, plastic-24 3.6520, and plastic-4 3.6970.
 
-Dense 2.8B currently wins absolute quality and sample efficiency. ATE is the strongest Pythia-1.4B-derived result at the matched token budget, but all 1.64B parameters are trainable in the current quadratic-plasticity run. Retention and generation quality remain unmeasured for these checkpoints.
+Dense 2.8B currently wins absolute quality and sample efficiency. Fresh ATE h1/l1 is the strongest matched Pythia-1.4B-derived result. Sequential h1/l2 is the best observed derived checkpoint, but its improvement cannot be attributed to added depth until a matched no-expansion continuation control is run. Retention and generation quality remain unmeasured.
 
-See the [2026-07-22 Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md).
+See the [ATE Sequential Expansion Sweep](research-log/2026-07-22-ate-expansion-sweep.md) and [Model Ranking Framework](research-log/2026-07-22-model-ranking-framework.md).
 
 ## Gate 6 — Systems Benchmark
 
@@ -187,9 +190,22 @@ See [2026-07-19 Pythia Variant Sweep](research-log/2026-07-19-pythia-variant-swe
 
 ## Gate 8 — Continual Expansion
 
-**Status: ATE active through step 200; early validation result is provisional**
+**Status: fresh h1/l1 validated through step 400; h1/l2 sequential result valid but causally unresolved; h2/l2 insufficient**
 
-ATE h1/l1 expands Pythia-1.4B from 1,414,647,808 to 1,640,127,360 parameters by adding one attention head, one layer, and 225,479,552 parameters. At step 200 it reached assistant PPL 3.5475, combined PPL 3.5328, and top-1 66.60% without recorded instability. Because the current quadratic-plasticity configuration trains the entire expanded model, ATE is an architecture-growth experiment rather than PEFT. Continue training and require free-generation and retention evidence before assigning a final performance status.
+ATE h1/l1 expands Pythia-1.4B from 1,414,647,808 to 1,640,127,360 parameters by adding one attention head, one layer, and 225,479,552 parameters. At step 400 it reached assistant PPL 3.4602, combined PPL 3.4481, and top-1 67.05% with drift 0.000565. The run is healthy through its latest completed evaluation; no plateau is established.
+
+Sequential h1/l2 inherits the 3.4602 h1/l1 state and reaches 3.4358 at local step 450. It then overfits sharply to 3.6970 at step 600 while training PPL falls. Keep step 450 as the selected checkpoint.
+
+Before claiming that the second added layer caused the improvement:
+
+- persist the exact source checkpoint path or hash;
+- evaluate step zero before any optimizer update;
+- restart h1/l1 without expansion using the same optimizer reset, data restart, and additional-token budget;
+- compare cumulative rather than only local training tokens.
+
+H2/l2 has one step-10 row and no checkpoint. Do not rank it.
+
+Because quadratic plasticity trains the original backbone as well as new parameters, these ATE runs are architecture-growth experiments rather than PEFT.
 
 Only after Gates 2–7:
 
