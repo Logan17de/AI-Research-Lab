@@ -1,6 +1,6 @@
 # Experimental Evidence Ledger
 
-**Last updated:** 2026-07-20
+**Last updated:** 2026-07-22
 
 Every result is assigned a status:
 
@@ -11,6 +11,56 @@ Every result is assigned a status:
 - **PROPOSED** — not yet tested.
 
 ## Current Valid Evidence
+
+### 2026-07-22 — Locked UltraChat plasticity benchmark
+
+**Status: VALID dataset and metrics; EXPLORATORY architecture comparison**
+
+The authoritative manifest contains 75,000 English UltraChat conversations:
+
+| Split | Examples | Tokens |
+|---|---:|---:|
+| Train | 72,000 | 49,777,171 |
+| Validation | 1,500 | 1,019,539 |
+| Test | 1,500 | 1,033,646 |
+
+All measured runs used the same locked train/validation files, order, seed 42, sequence length 1,024, effective batch size 160, and evaluation interval.
+
+| Variant | Snapshot status | Best step | Best assistant PPL | Top-1 | Plastic drift |
+|---|---|---:|---:|---:|---:|
+| Pythia-1.4B MOD + plastic-4 | stopped at 1,350 | 950 | **3.5608** | 66.61% | 0.001594 |
+| Pythia-1.4B MOD + plastic-24 | active through 240 | 200 | **3.6520** | 66.09% | 0.001207 |
+| Pythia-2.8B full FT | stopped at 1,450 | 1,450 | **3.2402** | 68.24% | — |
+
+At matched step 200:
+
+| Variant | Assistant PPL |
+|---|---:|
+| MOD + plastic-4 | 3.6970 |
+| MOD + plastic-24 | 3.6520 |
+| Pythia-2.8B full FT | **3.3908** |
+
+Valid observations:
+
+- plastic-4 selected 201,437,184 base parameters and reached its validation optimum at step 950;
+- plastic-4 then showed mild overfitting while its output-MOD/base logit ratio continued rising;
+- plastic-24 selected 1,311,625,216 base parameters, approximately 92.7% of Pythia-1.4B;
+- plastic-24 is therefore a broad hybrid, not a clean strongly parameter-efficient baseline;
+- Pythia-2.8B full FT is the validation leader and reached 3.5014 by step 100, below plastic-4's eventual best;
+- broad plasticity produced non-uniform drift, with the largest step-200 group drift near layer 8 rather than the final layer;
+- recorded throughput differs substantially, but GPU environments also differ, so speed multipliers are not controlled evidence.
+
+No free-generation or pretrained-retention result was present for these new checkpoints. No pure frozen-MOD, Pythia-1.4B full-FT, LoRA, or multi-seed control exists on the locked manifest yet.
+
+See [2026-07-22 Locked UltraChat Plasticity Benchmark](research-log/2026-07-22-ultrachat-plasticity-ate.md) and the [machine-readable snapshot](../results/pythia-ultrachat-plasticity-2026-07-22.csv).
+
+### 2026-07-22 — Adaptive Transformer Expansion launch
+
+**Status: PROPOSED / INITIALIZED**
+
+ATE is implemented as a separate width/depth expansion path. The current run directory contains only a validated 450-steps-per-epoch cache and no metrics, config, checkpoint, or drift record.
+
+ATE quality, convergence, efficiency, and retention remain unmeasured.
 
 ### 2026-07-20 — Follow-up variants and direct-answer V3
 
@@ -274,7 +324,7 @@ The run was stable, but the starting “Base” checkpoint already showed assist
 
 Not established:
 
-- Token MOD matches or beats fully fine-tuned Pythia-2.8B;
+- Token MOD or limited plasticity matches or beats fully fine-tuned Pythia-2.8B;
 - layer-unique tables are generally inferior to shared tables;
 - Attention and FFN MOD width are functionally interchangeable;
 - Input/Output MOD dominates the internal MOD families;
@@ -283,6 +333,7 @@ Not established:
 - MOD generalizes algorithmic rules as well as dense training;
 - analytical MAC estimates predict measured latency;
 - lower teacher-forced PPL means healthy free generation;
+- ATE improves quality, efficiency, or retention;
 - current results establish continual-learning superiority.
 
 ## Evidence Required Next
