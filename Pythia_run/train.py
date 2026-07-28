@@ -456,7 +456,12 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                 ate_output_init=config.ate_output_init,
                 ate_output_init_scale=config.ate_output_init_scale,
             )
-            model.to(device)
+            # Keep incremental verification on CPU FP32. GPU attention kernels
+            # may choose a different reduction schedule after the head count
+            # changes, which measures kernel rounding rather than architectural
+            # preservation.
+            if incremental_payload is None:
+                model.to(device)
             if incremental_payload is not None:
                 model.validate_incremental_source_metadata(architecture_metadata)
                 validate_tokenizer_metadata(incremental_payload, tokenizer)
@@ -465,7 +470,7 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                     raise RuntimeError(f"Strict incremental source load failed: {incompatible}")
                 model.eval()
                 probe_ids = torch.tensor(
-                    [[1, 2, 3, 4]], dtype=torch.long, device=device
+                    [[1, 2, 3, 4]], dtype=torch.long, device="cpu"
                 ).clamp_max(max(model.original_vocab_size - 1, 0))
                 with torch.no_grad():
                     source_output = model(input_ids=probe_ids, output_hidden_states=True)
@@ -495,6 +500,7 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                     preservation["passed"] and preservation["hidden_states_passed"]
                 )
                 preservation["verification_dtype"] = "float32"
+                preservation["verification_device"] = "cpu"
                 config._ate_preservation_report = preservation
                 config._ate_incremental_load_result = {
                     "exact_tensors": len(incremental_payload["model_state_dict"]),
@@ -509,9 +515,15 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                     )
                 config.new_attn_heads = model.new_attention_heads
                 config.new_ffn_layers = model.new_transformer_layers
-                if dtype is not None:
-                    model.to(dtype=dtype)
-                    print(f"incremental ATE model cast to training dtype {dtype}", flush=True)
+                if dtype is None:
+                    model.to(device=device)
+                else:
+                    model.to(device=device, dtype=dtype)
+                print(
+                    f"incremental ATE model moved to {device} with training dtype "
+                    f"{dtype or next(model.parameters()).dtype}",
+                    flush=True,
+                )
             custom_scales = tuple(
                 float(item.strip())
                 for item in config.plasticity_custom_scales.split(",")
@@ -826,7 +838,11 @@ def confirm_ate_training(config: TrainConfig, model) -> None:
     preservation = getattr(config, "_ate_preservation_report", None)
     if preservation:
         print("PRESERVATION TEST")
-        print(f"Verification dtype           : {preservation.get('verification_dtype', 'unknown')}")
+        print(
+            f"Verification device / dtype  : "
+            f"{preservation.get('verification_device', 'unknown')} / "
+            f"{preservation.get('verification_dtype', 'unknown')}"
+        )
         print(f"Max / mean logit difference : {preservation['max_abs_logit_difference']:.3e} / {preservation['mean_abs_logit_difference']:.3e}")
         print(f"Existing hidden differences : {preservation.get('existing_hidden_state_max_differences', [])}")
         print(f"Result                      : {'PASS' if preservation['passed'] else 'FAIL'}")
