@@ -10,7 +10,12 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from transformers import AutoModelForCausalLM, GPTNeoXForCausalLM
-from transformers.models.gpt_neox.modeling_gpt_neox import GPTNeoXLayer
+from transformers.models.gpt_neox.modeling_gpt_neox import (
+    ALL_ATTENTION_FUNCTIONS,
+    GPTNeoXLayer,
+    apply_rotary_pos_emb,
+    eager_attention_forward,
+)
 
 from pythia_model import PythiaModModel
 
@@ -107,6 +112,315 @@ class ExpandedLinear(nn.Module):
         new_output = F.linear(old_inputs, self.old_to_new)
         new_output = new_output + F.linear(new_inputs, self.new_to_new, self.new_bias)
         return torch.cat((old_output, new_output), dim=-1)
+
+
+class StageQKVProjection(nn.Module):
+    """QKV projection for only the newest attention-head group."""
+
+    def __init__(
+        self,
+        *,
+        old_features: int,
+        new_features: int,
+        new_heads: int,
+        head_size: int,
+        reference: torch.Tensor,
+        initializer_range: float,
+        bias: bool,
+    ) -> None:
+        super().__init__()
+        self.old_features = int(old_features)
+        self.new_features = int(new_features)
+        self.new_heads = int(new_heads)
+        self.head_size = int(head_size)
+        self.in_features = self.old_features + self.new_features
+        self.out_features = 3 * self.new_heads * self.head_size
+        self.old_to_new = _normal_parameter(
+            reference, (self.out_features, self.old_features), initializer_range
+        )
+        self.new_to_new = _normal_parameter(
+            reference, (self.out_features, self.new_features), initializer_range
+        )
+        self.bias = (
+            nn.Parameter(torch.zeros(self.out_features, device=reference.device, dtype=reference.dtype))
+            if bias
+            else None
+        )
+
+    @property
+    def weight(self) -> torch.Tensor:
+        return torch.cat((self.old_to_new, self.new_to_new), dim=1)
+
+    def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
+        old, new = hidden_states.split((self.old_features, self.new_features), dim=-1)
+        result = F.linear(old, self.old_to_new)
+        return result + F.linear(new, self.new_to_new, self.bias)
+
+
+class StageExpandedAttention(nn.Module):
+    """Adds a head group without changing earlier groups' execution shape."""
+
+    def __init__(
+        self,
+        base_attention: nn.Module,
+        *,
+        new_hidden: int,
+        new_heads: int,
+        head_size: int,
+        initializer_range: float,
+        output_init: str,
+        output_init_scale: float,
+    ) -> None:
+        super().__init__()
+        if new_hidden != new_heads * head_size:
+            raise ValueError(
+                f"Attention stage width {new_hidden} does not match "
+                f"{new_heads} heads x {head_size}."
+            )
+        # Later global config updates must not change the checkpointed group.
+        base_attention.config = copy.deepcopy(base_attention.config)
+        self.base_attention = base_attention
+        self.old_hidden = self._attention_hidden_size(base_attention)
+        self.new_hidden = int(new_hidden)
+        self.total_hidden = self.old_hidden + self.new_hidden
+        self.new_heads = int(new_heads)
+        self.head_size = int(head_size)
+        self.scaling = self.head_size**-0.5
+        self.rotary_ndims = int(getattr(base_attention, "rotary_ndims"))
+        self.attention_dropout = float(getattr(base_attention, "attention_dropout"))
+        self.is_causal = True
+        self.layer_idx = int(getattr(base_attention, "layer_idx", 0) or 0)
+        self.config = copy.deepcopy(base_attention.config)
+
+        reference = next(base_attention.parameters())
+        qkv = getattr(base_attention, "query_key_value", None)
+        has_qkv_bias = bool(qkv is not None and qkv.bias is not None)
+        self.query_key_value = StageQKVProjection(
+            old_features=self.old_hidden,
+            new_features=self.new_hidden,
+            new_heads=self.new_heads,
+            head_size=self.head_size,
+            reference=reference,
+            initializer_range=initializer_range,
+            bias=has_qkv_bias,
+        )
+        self.new_to_old = _output_parameter(
+            reference,
+            (self.old_hidden, self.new_hidden),
+            output_init,
+            output_init_scale,
+        )
+        self.old_to_new = _normal_parameter(
+            reference, (self.new_hidden, self.old_hidden), initializer_range
+        )
+        self.new_to_new = _normal_parameter(
+            reference, (self.new_hidden, self.new_hidden), initializer_range
+        )
+        leaf_dense = self._leaf_dense(base_attention)
+        self.new_output_bias = (
+            nn.Parameter(torch.zeros(self.new_hidden, device=reference.device, dtype=reference.dtype))
+            if leaf_dense.bias is not None
+            else None
+        )
+
+    @staticmethod
+    def _attention_hidden_size(attention: nn.Module) -> int:
+        if isinstance(attention, StageExpandedAttention):
+            return attention.total_hidden
+        return int(attention.query_key_value.in_features)
+
+    @staticmethod
+    def _leaf_dense(attention: nn.Module) -> nn.Module:
+        while isinstance(attention, StageExpandedAttention):
+            attention = attention.base_attention
+        return attention.dense
+
+    @property
+    def total_heads(self) -> int:
+        return self._attention_head_count(self.base_attention) + self.new_heads
+
+    @classmethod
+    def _attention_head_count(cls, attention: nn.Module) -> int:
+        if isinstance(attention, StageExpandedAttention):
+            return attention.total_heads
+        return int(attention.query_key_value.out_features // (3 * attention.head_size))
+
+    @staticmethod
+    def _attention_interface(module: nn.Module, output_attentions: bool, head_mask):
+        attention_type = module.config._attn_implementation
+        if (output_attentions or head_mask is not None) and attention_type in {
+            "sdpa",
+            "flash_attention_2",
+        }:
+            attention_type = "eager"
+        elif (
+            module.training
+            and module.attention_dropout > 0
+            and attention_type == "flex_attention"
+        ):
+            attention_type = "eager"
+        if attention_type == "eager":
+            return eager_attention_forward
+        return ALL_ATTENTION_FUNCTIONS[attention_type]
+
+    @staticmethod
+    def _split_head_mask(head_mask: torch.Tensor | None, sizes: list[int]):
+        if head_mask is None:
+            return [None] * len(sizes)
+        total = sum(sizes)
+        dimensions = [index for index, size in enumerate(head_mask.shape) if size == total]
+        if not dimensions:
+            raise RuntimeError(
+                f"Cannot split head mask shape {tuple(head_mask.shape)} across {sizes}."
+            )
+        return list(head_mask.split(sizes, dim=dimensions[0]))
+
+    @classmethod
+    def _collect_from_attention(
+        cls,
+        attention: nn.Module,
+        hidden_states: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> list[dict]:
+        if isinstance(attention, StageExpandedAttention):
+            return attention._collect_groups(hidden_states, position_embeddings)
+        input_shape = hidden_states.shape[:-1]
+        head_size = int(attention.head_size)
+        heads = cls._attention_head_count(attention)
+        qkv = attention.query_key_value(hidden_states)
+        qkv = qkv.view(*input_shape, heads, 3 * head_size).transpose(1, 2)
+        query, key, value = qkv.chunk(3, dim=-1)
+        cos, sin = position_embeddings
+        query, key = apply_rotary_pos_emb(query, key, cos, sin)
+        return [{
+            "module": attention,
+            "query": query,
+            "key": key,
+            "value": value,
+            "heads": heads,
+        }]
+
+    def _collect_groups(
+        self,
+        hidden_states: torch.Tensor,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    ) -> list[dict]:
+        old_hidden, _ = hidden_states.split((self.old_hidden, self.new_hidden), dim=-1)
+        groups = self._collect_from_attention(
+            self.base_attention, old_hidden, position_embeddings
+        )
+        input_shape = hidden_states.shape[:-1]
+        qkv = self.query_key_value(hidden_states)
+        qkv = qkv.view(*input_shape, self.new_heads, 3 * self.head_size).transpose(1, 2)
+        query, key, value = qkv.chunk(3, dim=-1)
+        cos, sin = position_embeddings
+        query, key = apply_rotary_pos_emb(query, key, cos, sin)
+        groups.append({
+            "module": self,
+            "query": query,
+            "key": key,
+            "value": value,
+            "heads": self.new_heads,
+        })
+        return groups
+
+    def _project_attention(self, attention_output: torch.Tensor) -> torch.Tensor:
+        old, new = attention_output.split((self.old_hidden, self.new_hidden), dim=-1)
+        if isinstance(self.base_attention, StageExpandedAttention):
+            old_output = self.base_attention._project_attention(old)
+        else:
+            old_output = self.base_attention.dense(old)
+        old_output = old_output + F.linear(new, self.new_to_old)
+        new_output = F.linear(old, self.old_to_new)
+        new_output = new_output + F.linear(new, self.new_to_new, self.new_output_bias)
+        return torch.cat((old_output, new_output), dim=-1)
+
+    def zero_output_paths(self, mode: str, scale: float) -> None:
+        if isinstance(self.base_attention, StageExpandedAttention):
+            self.base_attention.zero_output_paths(mode, scale)
+        else:
+            for parameter in self.base_attention.dense.parameters():
+                if mode == "exact":
+                    nn.init.zeros_(parameter)
+                else:
+                    nn.init.normal_(parameter, mean=0.0, std=scale)
+        for parameter in (
+            self.new_to_old,
+            self.old_to_new,
+            self.new_to_new,
+            self.new_output_bias,
+        ):
+            if parameter is None:
+                continue
+            if mode == "exact":
+                nn.init.zeros_(parameter)
+            else:
+                nn.init.normal_(parameter, mean=0.0, std=scale)
+
+    def forward(
+        self,
+        hidden_states: torch.Tensor,
+        attention_mask: torch.Tensor,
+        head_mask: torch.Tensor | None = None,
+        layer_past=None,
+        output_attentions: bool = False,
+        cache_position: torch.Tensor | None = None,
+        position_embeddings: tuple[torch.Tensor, torch.Tensor] | None = None,
+        **kwargs,
+    ):
+        if position_embeddings is None:
+            raise RuntimeError("StageExpandedAttention requires position embeddings.")
+        input_shape = hidden_states.shape[:-1]
+        groups = self._collect_groups(hidden_states, position_embeddings)
+        sizes = [int(group["heads"]) for group in groups]
+
+        if layer_past is not None:
+            cos, sin = position_embeddings
+            all_keys = torch.cat([group["key"] for group in groups], dim=1)
+            all_values = torch.cat([group["value"] for group in groups], dim=1)
+            cache_kwargs = {
+                "sin": sin,
+                "cos": cos,
+                "partial_rotation_size": self.rotary_ndims,
+                "cache_position": cache_position,
+            }
+            all_keys, all_values = layer_past.update(
+                all_keys, all_values, self.layer_idx, cache_kwargs
+            )
+            split_keys = all_keys.split(sizes, dim=1)
+            split_values = all_values.split(sizes, dim=1)
+            for group, key, value in zip(groups, split_keys, split_values):
+                group["key"] = key
+                group["value"] = value
+
+        masks = self._split_head_mask(head_mask, sizes)
+        raw_outputs = []
+        attention_weights = []
+        for group, group_mask in zip(groups, masks):
+            module = group["module"]
+            interface = self._attention_interface(module, output_attentions, group_mask)
+            output, weights = interface(
+                module,
+                group["query"],
+                group["key"],
+                group["value"],
+                attention_mask,
+                scaling=module.scaling,
+                dropout=0.0 if not self.training else module.attention_dropout,
+                head_mask=group_mask,
+                **kwargs,
+            )
+            raw_outputs.append(output.reshape(*input_shape, -1).contiguous())
+            if weights is not None:
+                attention_weights.append(weights)
+
+        projected = self._project_attention(torch.cat(raw_outputs, dim=-1))
+        weights = (
+            torch.cat(attention_weights, dim=1)
+            if attention_weights and len(attention_weights) == len(groups)
+            else None
+        )
+        return projected, weights
 
 
 class ExpandedEmbedding(nn.Module):
@@ -598,7 +912,7 @@ class PythiaATEModel(PythiaModModel):
         added_hidden = int(new_attention_heads) * head_dim
         added_intermediate = int(round((original_hidden + added_hidden) * original_intermediate / original_hidden)) - original_intermediate
         if added_hidden:
-            cls._widen_existing_modules(
+            cls._legacy_widen_existing_modules(
                 base_model,
                 added_hidden,
                 added_intermediate,
@@ -656,7 +970,7 @@ class PythiaATEModel(PythiaModModel):
         return model
 
     @staticmethod
-    def _widen_layer(
+    def _legacy_widen_layer(
         layer: nn.Module,
         added_hidden: int,
         added_intermediate: int,
@@ -678,6 +992,74 @@ class PythiaATEModel(PythiaModModel):
             layer.attention.dense,
             new_in_features=added_hidden,
             new_out_features=added_hidden,
+            initializer_range=initializer,
+            output_init=output_init,
+            output_init_scale=output_scale,
+        )
+        layer.mlp.dense_h_to_4h = ExpandedLinear(
+            layer.mlp.dense_h_to_4h,
+            new_in_features=added_hidden,
+            new_out_features=added_intermediate,
+            initializer_range=initializer,
+            output_init=output_init,
+            output_init_scale=output_scale,
+        )
+        layer.mlp.dense_4h_to_h = ExpandedLinear(
+            layer.mlp.dense_4h_to_h,
+            new_in_features=added_intermediate,
+            new_out_features=added_hidden,
+            initializer_range=initializer,
+            output_init=output_init,
+            output_init_scale=output_scale,
+        )
+
+    @classmethod
+    def _legacy_widen_existing_modules(
+        cls,
+        base_model: GPTNeoXForCausalLM,
+        added_hidden: int,
+        added_intermediate: int,
+        initializer: float,
+        output_init: str,
+        output_scale: float,
+    ) -> None:
+        base_model.gpt_neox.embed_in = ExpandedEmbedding(
+            base_model.gpt_neox.embed_in, added_hidden, initializer
+        )
+        base_model.embed_out = ExpandedLMHead(
+            base_model.embed_out, added_hidden, output_init, output_scale
+        )
+        base_model.gpt_neox.final_layer_norm = ExpandedLayerNorm(
+            base_model.gpt_neox.final_layer_norm, added_hidden
+        )
+        for layer in base_model.gpt_neox.layers:
+            cls._legacy_widen_layer(
+                layer, added_hidden, added_intermediate, initializer, output_init, output_scale
+            )
+
+    @staticmethod
+    def _widen_layer(
+        layer: nn.Module,
+        added_hidden: int,
+        added_intermediate: int,
+        initializer: float,
+        output_init: str,
+        output_scale: float,
+    ) -> None:
+        head_size = int(getattr(layer.attention, "head_size"))
+        if added_hidden % head_size:
+            raise ValueError(
+                f"Added attention width {added_hidden} is not divisible by head size {head_size}."
+            )
+        layer.input_layernorm = ExpandedLayerNorm(layer.input_layernorm, added_hidden)
+        layer.post_attention_layernorm = ExpandedLayerNorm(
+            layer.post_attention_layernorm, added_hidden
+        )
+        layer.attention = StageExpandedAttention(
+            layer.attention,
+            new_hidden=added_hidden,
+            new_heads=added_hidden // head_size,
+            head_size=head_size,
             initializer_range=initializer,
             output_init=output_init,
             output_init_scale=output_scale,
@@ -734,12 +1116,19 @@ class PythiaATEModel(PythiaModModel):
 
     @staticmethod
     def _initialize_depth_outputs(layer: nn.Module, output_init: str, output_scale: float) -> None:
-        for module in (layer.attention.dense, layer.mlp.dense_4h_to_h):
-            for parameter in module.parameters():
+        if isinstance(layer.attention, StageExpandedAttention):
+            layer.attention.zero_output_paths(output_init, output_scale)
+        else:
+            for parameter in layer.attention.dense.parameters():
                 if output_init == "exact":
                     nn.init.zeros_(parameter)
                 else:
                     nn.init.normal_(parameter, mean=0.0, std=output_scale)
+        for parameter in layer.mlp.dense_4h_to_h.parameters():
+            if output_init == "exact":
+                nn.init.zeros_(parameter)
+            else:
+                nn.init.normal_(parameter, mean=0.0, std=output_scale)
 
     def _new_base_layer(self, layer_index: int) -> nn.Module:
         config = copy.deepcopy(self.config)
@@ -1142,7 +1531,13 @@ class PythiaATEModel(PythiaModModel):
                 category = "Depth block"
             elif "query_key_value" in name:
                 category = "Attention input"
-            elif ".attention.dense" in name:
+            elif (
+                ".attention.dense" in name
+                or re.search(
+                    r"\.attention\.(?:base_attention\.)*(?:new_to_old|old_to_new|new_to_new|new_output_bias)$",
+                    name,
+                )
+            ):
                 category = "Attention output"
             elif "dense_h_to_4h" in name:
                 category = "FFN input"

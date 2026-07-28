@@ -6,7 +6,7 @@ import pytest
 import torch
 from transformers import GPTNeoXConfig, GPTNeoXForCausalLM
 
-from ate_model import PythiaATEModel
+from ate_model import PythiaATEModel, StageExpandedAttention
 from checkpointing import load_checkpoint, save_checkpoint
 from config import config_from_dict
 from train import build_optimizer, confirm_ate_training
@@ -354,3 +354,62 @@ def test_legacy_padded_control_rows_migrate_without_suffix_assumption() -> None:
     assert difference.max().item() < 1e-6
     assert difference.mean().item() < 1e-7
     assert model.ate_metadata()["architecture_version"] == "pythia_ate_v2_staged"
+
+
+def test_legacy_trained_stage_gains_width_and_depth_without_numeric_drift() -> None:
+    model = PythiaATEModel._build_legacy(
+        tiny_base(),
+        model_name="test",
+        revision=None,
+        original_vocab_size=64,
+        vocab_size=64,
+        control_token_ids=(),
+        new_attention_heads=1,
+        new_transformer_layers=1,
+        gradient_checkpointing=False,
+    )
+    model.configure_ate_plasticity("off")
+    input_ids = torch.tensor([[3, 1, 4, 1]])
+    optimizer = torch.optim.AdamW(model.current_stage_parameters(), lr=1e-3)
+    optimizer.zero_grad()
+    model(input_ids=input_ids, labels=input_ids)["loss"].backward()
+    optimizer.step()
+    model.eval()
+    model.migrate_legacy_control_rows()
+    source_attention = model.base_model.gpt_neox.layers[0].attention
+    with torch.no_grad():
+        expected = model(input_ids)["logits"]
+
+    model.add_expansion_stage(added_attention_heads=1, added_transformer_layers=1)
+    with torch.no_grad():
+        actual = model(input_ids)["logits"]
+
+    expanded_attention = model.base_model.gpt_neox.layers[0].attention
+    assert isinstance(expanded_attention, StageExpandedAttention)
+    assert expanded_attention.base_attention is source_attention
+    assert expanded_attention._attention_head_count(source_attention) == 5
+    assert expanded_attention.new_heads == 1
+    assert torch.equal(actual, expected)
+
+
+def test_segmented_attention_cached_decoding_matches_full_forward() -> None:
+    model = PythiaATEModel.from_base_model(
+        tiny_base(), new_attention_heads=1, new_transformer_layers=1
+    ).eval()
+    model.add_expansion_stage(added_attention_heads=1, added_transformer_layers=1)
+    input_ids = torch.tensor([[2, 7, 1, 8]])
+    with torch.no_grad():
+        full = model(input_ids=input_ids, use_cache=False)["logits"]
+        cached = None
+        pieces = []
+        for index in range(input_ids.shape[1]):
+            output = model(
+                input_ids=input_ids[:, index : index + 1],
+                attention_mask=torch.ones((1, index + 1), dtype=torch.long),
+                past_key_values=cached,
+                use_cache=True,
+            )
+            cached = output["past_key_values"]
+            pieces.append(output["logits"])
+    incremental = torch.cat(pieces, dim=1)
+    assert torch.allclose(incremental, full, atol=1e-6, rtol=1e-6)
