@@ -438,6 +438,16 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
             architecture_metadata = getattr(config, "_ate_resume_metadata", None)
             if incremental_payload is not None:
                 architecture_metadata = incremental_payload.get("architecture_metadata")
+                # Preservation is an FP32 architectural invariant. Running this
+                # probe in BF16/FP16 can change attention-kernel rounding when
+                # the head count changes even though every new output path is
+                # exactly zero.
+                common["torch_dtype"] = torch.float32
+                print(
+                    "incremental ATE preservation build uses FP32; "
+                    f"verified model will be cast to {dtype} before training",
+                    flush=True,
+                )
             model = PythiaATEModel.from_pretrained(
                 **common,
                 new_attention_heads=(0 if architecture_metadata else config.new_attn_heads),
@@ -484,6 +494,7 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                 preservation["passed"] = bool(
                     preservation["passed"] and preservation["hidden_states_passed"]
                 )
+                preservation["verification_dtype"] = "float32"
                 config._ate_preservation_report = preservation
                 config._ate_incremental_load_result = {
                     "exact_tensors": len(incremental_payload["model_state_dict"]),
@@ -498,6 +509,9 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                     )
                 config.new_attn_heads = model.new_attention_heads
                 config.new_ffn_layers = model.new_transformer_layers
+                if dtype is not None:
+                    model.to(dtype=dtype)
+                    print(f"incremental ATE model cast to training dtype {dtype}", flush=True)
             custom_scales = tuple(
                 float(item.strip())
                 for item in config.plasticity_custom_scales.split(",")
@@ -812,6 +826,7 @@ def confirm_ate_training(config: TrainConfig, model) -> None:
     preservation = getattr(config, "_ate_preservation_report", None)
     if preservation:
         print("PRESERVATION TEST")
+        print(f"Verification dtype           : {preservation.get('verification_dtype', 'unknown')}")
         print(f"Max / mean logit difference : {preservation['max_abs_logit_difference']:.3e} / {preservation['mean_abs_logit_difference']:.3e}")
         print(f"Existing hidden differences : {preservation.get('existing_hidden_state_max_differences', [])}")
         print(f"Result                      : {'PASS' if preservation['passed'] else 'FAIL'}")
