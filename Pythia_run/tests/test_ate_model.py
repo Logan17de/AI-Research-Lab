@@ -350,9 +350,7 @@ def test_legacy_padded_control_rows_migrate_without_suffix_assumption() -> None:
     model.migrate_legacy_control_rows()
     with torch.no_grad():
         actual = model(input_ids)["logits"]
-    difference = (expected - actual).abs()
-    assert difference.max().item() < 1e-6
-    assert difference.mean().item() < 1e-7
+    assert torch.equal(expected, actual)
     assert model.ate_metadata()["architecture_version"] == "pythia_ate_v2_staged"
 
 
@@ -363,7 +361,7 @@ def test_legacy_trained_stage_gains_width_and_depth_without_numeric_drift() -> N
         revision=None,
         original_vocab_size=64,
         vocab_size=64,
-        control_token_ids=(),
+        control_token_ids=(61, 62, 63),
         new_attention_heads=1,
         new_transformer_layers=1,
         gradient_checkpointing=False,

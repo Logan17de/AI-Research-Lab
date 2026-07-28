@@ -605,9 +605,36 @@ class ControlTokenLMHead(nn.Module):
         logits = self.base(hidden_states)
         if self.out_features > self.base_vocab_size:
             logits = F.pad(logits, (0, self.out_features - self.base_vocab_size))
-        control_logits = F.linear(hidden_states, self.control_weight, self.control_bias)
+        control_logits = []
+        for row, token_id in enumerate(self.control_ids.tolist()):
+            if token_id < self.base_vocab_size:
+                # Preserve the full LM-head reduction exactly at migration.
+                # The zero-initialized delta remains independently trainable.
+                weight_delta = self.control_weight[row] - self.base.weight[token_id]
+                bias_delta = None
+                if self.control_bias is not None:
+                    bias_delta = self.control_bias[row] - self.base.bias[token_id]
+                value = logits[..., token_id : token_id + 1]
+                value = value + F.linear(
+                    hidden_states,
+                    weight_delta.unsqueeze(0),
+                    None if bias_delta is None else bias_delta.unsqueeze(0),
+                )
+            else:
+                bias = None
+                if self.control_bias is not None:
+                    bias = self.control_bias[row : row + 1]
+                value = F.linear(
+                    hidden_states,
+                    self.control_weight[row : row + 1],
+                    bias,
+                )
+            control_logits.append(value)
         return torch.index_copy(
-            logits, -1, self.control_ids.to(logits.device), control_logits
+            logits,
+            -1,
+            self.control_ids.to(logits.device),
+            torch.cat(control_logits, dim=-1),
         )
 
 
