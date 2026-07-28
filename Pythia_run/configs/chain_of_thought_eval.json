@@ -1,0 +1,8 @@
+{
+  "groups": {
+    "chain_of_thought_validation": {
+      "dataset_path": "data/chain_of_thought/split/validation.txt",
+      "data_format": "qa_sft"
+    }
+  }
+}

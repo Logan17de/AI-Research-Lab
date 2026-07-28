@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Local environments and editor state
+.venv/
+venv/
+.env
+.idea/
+.vscode/
+
+# Training data and generated artifacts
+Pythia_run/data/
+Pythia_run/parquet/
+Pythia_run/outputs/
+Pythia_run/runs/
+Pythia_run/tmp/
+Pythia_run/*.pt
+Pythia_run/*.pth
+Pythia_run/*.safetensors
+Pythia_run/output_chat.txt
+Pythia_run/bigdata.txt
+
