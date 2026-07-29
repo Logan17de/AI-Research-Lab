@@ -6,8 +6,9 @@ Chronological experiment and audit records live here. File names use ISO dates s
 
 | Date | Entry | Status |
 |---|---|---|
-| 2026-07-22 | [ATE Sequential Expansion Sweep](2026-07-22-ate-expansion-sweep.md) | h1/l1 valid through step 400; h1/l2 sequential best at 450; h2/l2 insufficient |
-| 2026-07-22 | [Model Ranking Framework](2026-07-22-model-ranking-framework.md) | Current multi-track ranking; ATE provisional; test evaluation pending |
+| 2026-07-29 | [Stage-Aware ATE H2/L2 Review](2026-07-29-ate-h2-l2-review.md) | Valid metrics through step 650; best 3.4548 at step 450; checkpoint present; source lineage unresolved |
+| 2026-07-22 | [ATE Sequential Expansion Sweep](2026-07-22-ate-expansion-sweep.md) | h1/l1 valid through step 400; h1/l2 sequential best at 450; original h2/l2 launch superseded by July 29 review |
+| 2026-07-22 | [Model Ranking Framework](2026-07-22-model-ranking-framework.md) | Multi-track ranking; see July 29 H2/L2 review for the latest expansion result |
 | 2026-07-22 | [Locked UltraChat Plasticity Benchmark and ATE Launch](2026-07-22-ultrachat-plasticity-ate.md) | Valid metrics snapshot; exploratory comparison; ATE initialized |
 | 2026-07-20 | [Pythia V3 Chat Evaluation](2026-07-20-pythia-v3-chat-evaluation.md) | Owner-confirmed generations; exploratory quality assessment |
 | 2026-07-20 | [Pythia Follow-up Variants](2026-07-20-pythia-follow-up-variants.md) | Valid metrics/data reports; exploratory interpretation |
