@@ -476,8 +476,15 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                     source_output = model(input_ids=probe_ids, output_hidden_states=True)
                     source_logits = source_output["logits"].float().clone()
                     source_hidden = tuple(item.float().clone() for item in source_output["hidden_states"])
+                migration_max = 0.0
+                migration_mean = 0.0
                 if architecture_metadata.get("architecture_version") == "pythia_ate_v1":
                     model.migrate_legacy_control_rows()
+                    with torch.no_grad():
+                        migrated_logits = model(input_ids=probe_ids)["logits"].float()
+                    migration_difference = (migrated_logits - source_logits).abs()
+                    migration_max = float(migration_difference.max().item())
+                    migration_mean = float(migration_difference.mean().item())
                 model.add_expansion_stage(
                     added_attention_heads=config._ate_incremental_requested_heads,
                     added_transformer_layers=config._ate_incremental_requested_layers,
@@ -501,16 +508,21 @@ def build_model_and_tokenizer(config: TrainConfig, device: torch.device):
                 )
                 preservation["verification_dtype"] = "float32"
                 preservation["verification_device"] = "cpu"
+                preservation["migration_max_abs_logit_difference"] = migration_max
+                preservation["migration_mean_abs_logit_difference"] = migration_mean
                 config._ate_preservation_report = preservation
                 config._ate_incremental_load_result = {
                     "exact_tensors": len(incremental_payload["model_state_dict"]),
                     "expanded_tensors": 0,
                 }
                 if not preservation["passed"] and not config.allow_nonpreserving_expansion:
+                    hidden_max = max(hidden_differences, default=0.0)
                     raise RuntimeError(
                         "Incremental ATE preservation failed: "
                         f"max={preservation['max_abs_logit_difference']:.3e} "
-                        f"mean={preservation['mean_abs_logit_difference']:.3e}. "
+                        f"mean={preservation['mean_abs_logit_difference']:.3e} "
+                        f"migration_max={migration_max:.3e} "
+                        f"hidden_max={hidden_max:.3e}. "
                         "Use --allow-nonpreserving-expansion only for an intentional unsafe experiment."
                     )
                 config.new_attn_heads = model.new_attention_heads
@@ -844,6 +856,11 @@ def confirm_ate_training(config: TrainConfig, model) -> None:
             f"{preservation.get('verification_dtype', 'unknown')}"
         )
         print(f"Max / mean logit difference : {preservation['max_abs_logit_difference']:.3e} / {preservation['mean_abs_logit_difference']:.3e}")
+        print(
+            "Migration max / mean          : "
+            f"{preservation.get('migration_max_abs_logit_difference', 0.0):.3e} / "
+            f"{preservation.get('migration_mean_abs_logit_difference', 0.0):.3e}"
+        )
         print(f"Existing hidden differences : {preservation.get('existing_hidden_state_max_differences', [])}")
         print(f"Result                      : {'PASS' if preservation['passed'] else 'FAIL'}")
     print("=" * 78)

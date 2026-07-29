@@ -390,6 +390,37 @@ def test_legacy_trained_stage_gains_width_and_depth_without_numeric_drift() -> N
     assert torch.equal(actual, expected)
 
 
+def test_incremental_stage_replays_legacy_qkv_with_contiguous_layout() -> None:
+    model = PythiaATEModel._build_legacy(
+        tiny_base(),
+        model_name="test",
+        revision=None,
+        original_vocab_size=64,
+        vocab_size=64,
+        control_token_ids=(61, 62, 63),
+        new_attention_heads=1,
+        new_transformer_layers=1,
+        gradient_checkpointing=False,
+    ).eval()
+    model.migrate_legacy_control_rows()
+    legacy_attention = model.base_model.gpt_neox.layers[0].attention
+    seen_layouts = []
+
+    def capture_layout(_module, args) -> None:
+        seen_layouts.append(args[0].is_contiguous())
+
+    handle = legacy_attention.query_key_value.register_forward_pre_hook(capture_layout)
+    try:
+        model.add_expansion_stage(added_attention_heads=1, added_transformer_layers=1)
+        with torch.no_grad():
+            model(torch.tensor([[1, 2, 3, 4]]))
+    finally:
+        handle.remove()
+
+    assert seen_layouts
+    assert all(seen_layouts)
+
+
 def test_segmented_attention_cached_decoding_matches_full_forward() -> None:
     model = PythiaATEModel.from_base_model(
         tiny_base(), new_attention_heads=1, new_transformer_layers=1

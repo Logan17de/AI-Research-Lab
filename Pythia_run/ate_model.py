@@ -108,6 +108,10 @@ class ExpandedLinear(nn.Module):
         old_inputs, new_inputs = inputs.split(
             (self.old_in_features, self.new_in_features), dim=-1
         )
+        # Recreate the layout seen by the checkpointed stage. A slice from a
+        # wider tensor is strided, which can select a different GEMM reduction.
+        old_inputs = old_inputs.contiguous()
+        new_inputs = new_inputs.contiguous()
         old_output = self.base(old_inputs) + F.linear(new_inputs, self.new_to_old)
         new_output = F.linear(old_inputs, self.old_to_new)
         new_output = new_output + F.linear(new_inputs, self.new_to_new, self.new_bias)
@@ -153,6 +157,8 @@ class StageQKVProjection(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         old, new = hidden_states.split((self.old_features, self.new_features), dim=-1)
+        old = old.contiguous()
+        new = new.contiguous()
         result = F.linear(old, self.old_to_new)
         return result + F.linear(new, self.new_to_new, self.bias)
 
@@ -306,6 +312,7 @@ class StageExpandedAttention(nn.Module):
         position_embeddings: tuple[torch.Tensor, torch.Tensor],
     ) -> list[dict]:
         old_hidden, _ = hidden_states.split((self.old_hidden, self.new_hidden), dim=-1)
+        old_hidden = old_hidden.contiguous()
         groups = self._collect_from_attention(
             self.base_attention, old_hidden, position_embeddings
         )
@@ -326,6 +333,8 @@ class StageExpandedAttention(nn.Module):
 
     def _project_attention(self, attention_output: torch.Tensor) -> torch.Tensor:
         old, new = attention_output.split((self.old_hidden, self.new_hidden), dim=-1)
+        old = old.contiguous()
+        new = new.contiguous()
         if isinstance(self.base_attention, StageExpandedAttention):
             old_output = self.base_attention._project_attention(old)
         else:
@@ -476,6 +485,8 @@ class ExpandedLMHead(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         old, new = hidden_states.split((self.base.in_features, self.new_features), dim=-1)
+        old = old.contiguous()
+        new = new.contiguous()
         return self.base(old) + F.linear(new, self.new_weight)
 
 
@@ -506,6 +517,8 @@ class ExpandedLayerNorm(nn.Module):
 
     def forward(self, hidden_states: torch.Tensor) -> torch.Tensor:
         old, new = hidden_states.split((self.old_features, self.new_features), dim=-1)
+        old = old.contiguous()
+        new = new.contiguous()
         old = self.base(old)
         new = F.layer_norm(new, (self.new_features,), self.new_weight, self.new_bias, self.eps)
         return torch.cat((old, new), dim=-1)
