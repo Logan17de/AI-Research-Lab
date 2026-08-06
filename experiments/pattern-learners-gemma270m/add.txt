@@ -1,0 +1,599 @@
+1. Q: What is 4 + 1?
+   A: 5
+
+2. Q: What's 45 plus 41?
+   A: 86
+
+3. Q: Calculate 328 + 27.
+   A: 355
+
+4. Q: 477 + 152 = ?
+   A: 629
+
+5. Q: Add 892 and 239.
+   A: 1131
+
+6. Q: How much is 914 + 559?
+   A: 1473
+
+7. Q: Can you tell me 3 plus 19?
+   A: 22
+
+8. Q: Solve: 64 + 14
+   A: 78
+
+9. Q: Quick, 130 plus 21?
+   A: 151
+
+10. Q: How many is 211 + 219?
+   A: 430
+
+11. Q: Hey, what's 717 + 204?
+   A: 921
+
+12. Q: I need to add 28 and 575, what do I get?
+   A: 603
+
+13. Q: Do the sum of 7 and 18.
+   A: 25
+
+14. Q: What's the total of 63 and 38?
+   A: 101
+
+15. Q: I'm trying to figure out 559 + 85. Can you help?
+   A: 644
+
+16. Q: Please calculate the sum of 242 and 103 for me.
+   A: 345
+
+17. Q: What do you get when you add 977 to 256?
+   A: 1233
+
+18. Q: Find the result of adding 164 and 715 together.
+   A: 879
+
+19. Q: Could you add these numbers: 14 and 11?
+   A: 25
+
+20. Q: I have a question: what is 45 plus 29 equal to?
+   A: 74
+
+21. Q: If I have 320 and get 53 more, how many do I have?
+   A: 373
+
+22. Q: There are 152 apples and 147 oranges. How many fruits in total?
+   A: 299
+
+23. Q: I spent $589 and then $74 more. What's the total spent?
+   A: 663
+
+24. Q: A bus has 368 passengers and picks up 868 more. How many now?
+   A: 1236
+
+25. Q: She walked 12 steps then 20 more. Total steps?
+   A: 32
+
+26. Q: My score was 43, then I got 15 points. New score?
+   A: 58
+
+27. Q: There were 847 birds, 68 more flew in. How many birds?
+   A: 915
+
+28. Q: I saved $374 last month and $163 this month. Total savings?
+   A: 537
+
+29. Q: The box has 587 toys. I add 70. How many toys now?
+   A: 657
+
+30. Q: He is 566 years old, his sister is 301 years older. How old is she?
+   A: 867
+
+31. Q: Can you help me with this? What is 20 + 12?
+   A: 32
+
+32. Q: I was wondering, how much is 83 plus 34?
+   A: 117
+
+33. Q: Let's say I have 821 items and buy 18 more. What's the total?
+   A: 839
+
+34. Q: In a store, there are 123 people in line and 438 more join. How many total?
+   A: 561
+
+35. Q: My team scored 433 points in the first half and 247 in the second. Final score?
+   A: 680
+
+36. Q: The recipe needs 297 grams of flour and 82 more. Total flour needed?
+   A: 379
+
+37. Q: Yesterday I read 8 pages and today 4 pages. How many pages did I read?
+   A: 12
+
+38. Q: There are 58 students in class A and 45 in class B. How many students altogether?
+   A: 103
+
+39. Q: I collected 564 stamps and my friend gave me 91 more. Total stamps?
+   A: 655
+
+40. Q: The temperature was 286 degrees and rose by 183. What's the new temperature?
+   A: 469
+
+41. Q: What is 19 + 7?
+   A: 26
+
+42. Q: What's 71 plus 92?
+   A: 163
+
+43. Q: Calculate 415 + 66.
+   A: 481
+
+44. Q: 198 + 305 = ?
+   A: 503
+
+45. Q: Add 744 and 156.
+   A: 900
+
+46. Q: How much is 621 + 908?
+   A: 1529
+
+47. Q: Can you tell me 16 plus 2?
+   A: 18
+
+48. Q: Solve: 55 + 67
+   A: 122
+
+49. Q: Quick, 902 plus 48?
+   A: 950
+
+50. Q: How many is 267 + 412?
+   A: 679
+
+51. Q: Hey, what's 539 + 175?
+   A: 714
+
+52. Q: I need to add 41 and 823, what do I get?
+   A: 864
+
+53. Q: Do the sum of 15 and 9.
+   A: 24
+
+54. Q: What's the total of 88 and 27?
+   A: 115
+
+55. Q: I'm trying to figure out 673 + 39. Can you help?
+   A: 712
+
+56. Q: Please calculate the sum of 314 and 289 for me.
+   A: 603
+
+57. Q: What do you get when you add 850 to 147?
+   A: 997
+
+58. Q: Find the result of adding 92 and 481 together.
+   A: 573
+
+59. Q: Could you add these numbers: 6 and 13?
+   A: 19
+
+60. Q: I have a question: what is 37 plus 54 equal to?
+   A: 91
+
+61. Q: If I have 456 and get 78 more, how many do I have?
+   A: 534
+
+62. Q: There are 209 apples and 331 oranges. How many fruits in total?
+   A: 540
+
+63. Q: I spent $712 and then $95 more. What's the total spent?
+   A: 807
+
+64. Q: A bus has 145 passengers and picks up 627 more. How many now?
+   A: 772
+
+65. Q: She walked 5 steps then 17 more. Total steps?
+   A: 22
+
+66. Q: My score was 76, then I got 28 points. New score?
+   A: 104
+
+67. Q: There were 934 birds, 52 more flew in. How many birds?
+   A: 986
+
+68. Q: I saved $218 last month and $347 this month. Total savings?
+   A: 565
+
+69. Q: The box has 461 toys. I add 129. How many toys now?
+   A: 590
+
+70. Q: He is 389 years old, his sister is 214 years older. How old is she?
+   A: 603
+
+71. Q: Can you help me with this? What is 11 + 8?
+   A: 19
+
+72. Q: I was wondering, how much is 49 plus 63?
+   A: 112
+
+73. Q: Let's say I have 735 items and buy 46 more. What's the total?
+   A: 781
+
+74. Q: In a store, there are 278 people in line and 156 more join. How many total?
+   A: 434
+
+75. Q: My team scored 512 points in the first half and 189 in the second. Final score?
+   A: 701
+
+76. Q: The recipe needs 183 grams of flour and 67 more. Total flour needed?
+   A: 250
+
+77. Q: Yesterday I read 14 pages and today 9 pages. How many pages did I read?
+   A: 23
+
+78. Q: There are 92 students in class A and 38 in class B. How many students altogether?
+   A: 130
+
+79. Q: I collected 427 stamps and my friend gave me 83 more. Total stamps?
+   A: 510
+
+80. Q: The temperature was 351 degrees and rose by 268. What's the new temperature?
+   A: 619
+
+81. Q: What is 2 + 18?
+   A: 20
+
+82. Q: What's 33 plus 77?
+   A: 110
+
+83. Q: Calculate 691 + 44.
+   A: 735
+
+84. Q: 254 + 381 = ?
+   A: 635
+
+85. Q: Add 808 and 192.
+   A: 1000
+
+86. Q: How much is 475 + 693?
+   A: 1168
+
+87. Q: Can you tell me 10 plus 5?
+   A: 15
+
+88. Q: Solve: 81 + 19
+   A: 100
+
+89. Q: Quick, 567 plus 73?
+   A: 640
+
+90. Q: How many is 142 + 298?
+   A: 440
+
+91. Q: Hey, what's 926 + 138?
+   A: 1064
+
+92. Q: I need to add 59 and 441, what do I get?
+   A: 500
+
+93. Q: Do the sum of 4 and 16.
+   A: 20
+
+94. Q: What's the total of 95 and 12?
+   A: 107
+
+95. Q: I'm trying to figure out 308 + 91. Can you help?
+   A: 399
+
+96. Q: Please calculate the sum of 167 and 423 for me.
+   A: 590
+
+97. Q: What do you get when you add 642 to 279?
+   A: 921
+
+98. Q: Find the result of adding 75 and 518 together.
+   A: 593
+
+99. Q: Could you add these numbers: 9 and 7?
+   A: 16
+
+100. Q: I have a question: what is 28 plus 66 equal to?
+   A: 94
+
+101. Q: If I have 583 and get 47 more, how many do I have?
+   A: 630
+
+102. Q: There are 316 apples and 204 oranges. How many fruits in total?
+   A: 520
+
+103. Q: I spent $829 and then $61 more. What's the total spent?
+   A: 890
+
+104. Q: A bus has 237 passengers and picks up 519 more. How many now?
+   A: 756
+
+105. Q: She walked 18 steps then 3 more. Total steps?
+   A: 21
+
+106. Q: My score was 64, then I got 31 points. New score?
+   A: 95
+
+107. Q: There were 751 birds, 89 more flew in. How many birds?
+   A: 840
+
+108. Q: I saved $193 last month and $276 this month. Total savings?
+   A: 469
+
+109. Q: The box has 498 toys. I add 152. How many toys now?
+   A: 650
+
+110. Q: He is 412 years old, his sister is 187 years older. How old is she?
+   A: 599
+
+111. Q: Can you help me with this? What is 13 + 6?
+   A: 19
+
+112. Q: I was wondering, how much is 57 plus 48?
+   A: 105
+
+113. Q: Let's say I have 684 items and buy 25 more. What's the total?
+   A: 709
+
+114. Q: In a store, there are 341 people in line and 229 more join. How many total?
+   A: 570
+
+115. Q: My team scored 478 points in the first half and 163 in the second. Final score?
+   A: 641
+
+116. Q: The recipe needs 256 grams of flour and 94 more. Total flour needed?
+   A: 350
+
+117. Q: Yesterday I read 7 pages and today 15 pages. How many pages did I read?
+   A: 22
+
+118. Q: There are 81 students in class A and 29 in class B. How many students altogether?
+   A: 110
+
+119. Q: I collected 539 stamps and my friend gave me 67 more. Total stamps?
+   A: 606
+
+120. Q: The temperature was 294 degrees and rose by 315. What's the new temperature?
+   A: 609
+
+121. Q: What is 17 + 4?
+   A: 21
+
+122. Q: What's 26 plus 85?
+   A: 111
+
+123. Q: Calculate 773 + 58.
+   A: 831
+
+124. Q: 139 + 462 = ?
+   A: 601
+
+125. Q: Add 901 and 108.
+   A: 1009
+
+126. Q: How much is 354 + 781?
+   A: 1135
+
+127. Q: Can you tell me 1 plus 20?
+   A: 21
+
+128. Q: Solve: 42 + 58
+   A: 100
+
+129. Q: Quick, 615 plus 37?
+   A: 652
+
+130. Q: How many is 183 + 347?
+   A: 530
+
+131. Q: Hey, what's 829 + 156?
+   A: 985
+
+132. Q: I need to add 73 and 392, what do I get?
+   A: 465
+
+133. Q: Do the sum of 12 and 8.
+   A: 20
+
+134. Q: What's the total of 69 and 41?
+   A: 110
+
+135. Q: I'm trying to figure out 486 + 72. Can you help?
+   A: 558
+
+136. Q: Please calculate the sum of 221 and 378 for me.
+   A: 599
+
+137. Q: What do you get when you add 934 to 165?
+   A: 1099
+
+138. Q: Find the result of adding 58 and 443 together.
+   A: 501
+
+139. Q: Could you add these numbers: 5 and 14?
+   A: 19
+
+140. Q: I have a question: what is 31 plus 79 equal to?
+   A: 110
+
+141. Q: If I have 647 and get 53 more, how many do I have?
+   A: 700
+
+142. Q: There are 275 apples and 318 oranges. How many fruits in total?
+   A: 593
+
+143. Q: I spent $764 and then $86 more. What's the total spent?
+   A: 850
+
+144. Q: A bus has 192 passengers and picks up 458 more. How many now?
+   A: 650
+
+145. Q: She walked 9 steps then 11 more. Total steps?
+   A: 20
+
+146. Q: My score was 52, then I got 47 points. New score?
+   A: 99
+
+147. Q: There were 868 birds, 41 more flew in. How many birds?
+   A: 909
+
+148. Q: I saved $307 last month and $192 this month. Total savings?
+   A: 499
+
+149. Q: The box has 523 toys. I add 177. How many toys now?
+   A: 700
+
+150. Q: He is 365 years old, his sister is 234 years older. How old is she?
+   A: 599
+
+151. Q: Can you help me with this? What is 8 + 15?
+   A: 23
+
+152. Q: I was wondering, how much is 94 plus 16?
+   A: 110
+
+153. Q: Let's say I have 512 items and buy 88 more. What's the total?
+   A: 600
+
+154. Q: In a store, there are 406 people in line and 194 more join. How many total?
+   A: 600
+
+155. Q: My team scored 591 points in the first half and 209 in the second. Final score?
+   A: 800
+
+156. Q: The recipe needs 148 grams of flour and 52 more. Total flour needed?
+   A: 200
+
+157. Q: Yesterday I read 19 pages and today 6 pages. How many pages did I read?
+   A: 25
+
+158. Q: There are 67 students in class A and 33 in class B. How many students altogether?
+   A: 100
+
+159. Q: I collected 481 stamps and my friend gave me 119 more. Total stamps?
+   A: 600
+
+160. Q: The temperature was 278 degrees and rose by 322. What's the new temperature?
+   A: 600
+
+161. Q: What is 6 + 14?
+   A: 20
+
+162. Q: What's 38 plus 62?
+   A: 100
+
+163. Q: Calculate 18 + 16.
+   A: 34
+
+164. Q: 29 + 34 = ?
+   A: 63
+
+165. Q: Add 403 and 37.
+   A: 440
+
+166. Q: How much is 129 + 396?
+   A: 525
+
+167. Q: Can you tell me 953 plus 188?
+   A: 1141
+
+168. Q: Solve: 63 + 766
+   A: 829
+
+169. Q: Quick, 11 plus 2?
+   A: 13
+
+170. Q: How many is 16 + 84?
+   A: 100
+
+171. Q: Hey, what's 588 + 74?
+   A: 662
+
+172. Q: I need to add 371 and 180, what do I get?
+   A: 551
+
+173. Q: Do the sum of 258 and 295.
+   A: 553
+
+174. Q: What's the total of 521 and 83?
+   A: 604
+
+175. Q: I'm trying to figure out 6 + 3. Can you help?
+   A: 9
+
+176. Q: Please calculate the sum of 86 and 18 for me.
+   A: 104
+
+177. Q: What do you get when you add 791 to 40?
+   A: 831
+
+178. Q: Find the result of adding 306 and 161 together.
+   A: 467
+
+179. Q: Could you add these numbers: 783 and 113?
+   A: 896
+
+180. Q: I have a question: what is 593 plus 609 equal to?
+   A: 1202
+
+181. Q: If I have 2 and get 20 more, how many do I have?
+   A: 22
+
+182. Q: There are 20 apples and 63 oranges. How many fruits in total?
+   A: 83
+
+183. Q: I spent $773 and then $84 more. What's the total spent?
+   A: 857
+
+184. Q: A bus has 389 passengers and picks up 367 more. How many now?
+   A: 756
+
+185. Q: She walked 523 steps then 289 more. Total steps?
+   A: 812
+
+186. Q: My score was 268, then I got 210 points. New score?
+   A: 478
+
+187. Q: There were 11 birds, 8 more flew in. How many birds?
+   A: 19
+
+188. Q: I saved $43 last month and $60 this month. Total savings?
+   A: 103
+
+189. Q: The box has 234 toys. I add 95. How many toys now?
+   A: 329
+
+190. Q: He is 430 years old, his sister is 253 years older. How old is she?
+   A: 683
+
+191. Q: Can you help me with this? What is 668 + 130?
+   A: 798
+
+192. Q: I was wondering, how much is 952 plus 770?
+   A: 1722
+
+193. Q: Let's say I have 3 items and buy 1 more. What's the total?
+   A: 4
+
+194. Q: In a store, there are 68 people in line and 89 more join. How many total?
+   A: 157
+
+195. Q: My team scored 676 points in the first half and 22 in the second. Final score?
+   A: 698
+
+196. Q: The recipe needs 137 grams of flour and 375 more. Total flour needed?
+   A: 512
+
+197. Q: Yesterday I read 418 pages and today 179 pages. How many pages did I read?
+   A: 597
+
+198. Q: There are 272 students in class A and 136 in class B. How many students altogether?
+   A: 408
+
+199. Q: I collected 12 stamps and my friend gave me 3 more. Total stamps?
+   A: 15
+
+200. Q: The temperature was 41 degrees and rose by 57. What's the new temperature?
+   A: 98
