@@ -9,53 +9,25 @@ The first experiment compares two approximately parameter-matched designs on `go
 | Single-layer | After the final decoder layer | 640 | 819,201 |
 | All-layers | After every one of 18 decoder layers | 36 per layer | 829,458 |
 
-The learner output projection is zero-initialized, so attaching a fresh learner has exactly zero effect before training.
+A new learner is zero-effect at initialization. Its output projection starts at zero, so attaching it does not alter the pretrained model before training.
 
-## Independent freezing and learning rates
+## Included datasets
 
-The code separates parameters into three non-overlapping groups:
+The repository datasets are used directly:
 
-- **Embedding:** input embedding plus tied/untied output embedding or LM head
-- **Backbone:** every original model parameter not in the embedding group
-- **Learner:** the newly attached pattern learner modules
+- `add.txt` — 200 addition questions in varied formats
+- `multiply.txt` — 200 multiplication questions in varied formats
 
-Each group has its own learning rate and can be frozen independently:
+Both use numbered Q/A blocks:
 
-```bash
---embedding-lr 1e-5 \
---backbone-lr 1e-5 \
---learner-lr 3e-4 \
---freeze-embeddings \
---freeze-backbone \
---unfreeze-learner
+```text
+1. Q: What is 4 + 1?
+   A: 5
 ```
 
-The opposite flags are also available: `--unfreeze-embeddings`, `--unfreeze-backbone`, and `--freeze-learner`.
+Pass either file through `--data-file`. The trainer parses it and creates a deterministic shuffled split. The default `--validation-ratio 0.2` produces 160 training and 40 validation examples.
 
-> Gemma ties its LM head to the token embeddings. They are intentionally treated as one parameter group, so the same tensor is never assigned to two optimizers or two learning rates.
-
-## Setup
-
-Gemma weights require accepting Google's Gemma license on Hugging Face and logging in locally.
-
-```bash
-python -m venv .venv
-source .venv/bin/activate        # Windows: .venv\Scripts\activate
-pip install -r requirements.txt
-huggingface-cli login
-```
-
-## Generate the first dataset
-
-```bash
-python generate_data.py \
-  --output-dir data/addition \
-  --operation addition \
-  --train-examples 4000 \
-  --validation-examples 500
-```
-
-Custom data uses JSONL:
+JSONL remains supported:
 
 ```json
 {"prompt": "What is 17 + 8?", "answer": "25"}
@@ -63,53 +35,124 @@ Custom data uses JSONL:
 
 Only answer tokens contribute to the language-model loss.
 
-## Model A: one full-width learner at one layer
+## Independent freezing and learning rates
+
+Parameters are separated into three non-overlapping groups:
+
+- **Embedding:** input embedding plus tied/untied output embedding or LM head
+- **Backbone:** every original model parameter outside the embedding group
+- **Learner:** named residual pattern learner modules
+
+Each group has an independent learning rate:
 
 ```bash
-python train.py \
-  --config configs/single_layer.json \
-  --train-file data/addition/train.jsonl \
-  --validation-file data/addition/validation.jsonl \
-  --output-dir runs/single-layer \
-  --pattern-name addition
+--embedding-lr 1e-5 \
+--backbone-lr 1e-5 \
+--learner-lr 3e-4
 ```
 
-Equivalent architecture arguments:
-
-```bash
---learner-mode single --learner-dim 640 --learner-layer -1
-```
-
-## Model B: small learner at every layer
-
-```bash
-python train.py \
-  --config configs/all_layers.json \
-  --train-file data/addition/train.jsonl \
-  --validation-file data/addition/validation.jsonl \
-  --output-dir runs/all-layers \
-  --pattern-name addition
-```
-
-Equivalent architecture arguments:
-
-```bash
---learner-mode all --learner-dim 36
-```
-
-You can derive the all-layer width automatically from a single-layer width:
-
-```bash
---learner-mode all --match-single-dim 640
-```
-
-## Train other model parts
-
-Learner only, the default controlled experiment:
+Each group can be frozen independently:
 
 ```bash
 --freeze-embeddings --freeze-backbone --unfreeze-learner
 ```
+
+The opposite flags are available:
+
+```bash
+--unfreeze-embeddings --unfreeze-backbone --freeze-learner
+```
+
+Gemma ties its LM head to token embeddings. The shared tensor is assigned only to the embedding group.
+
+## Setup
+
+Accept the Gemma license on Hugging Face, then authenticate:
+
+```bash
+pip install -r requirements.txt
+huggingface-cli login
+```
+
+## Train addition from the pretrained model
+
+### Model A — single final-layer learner
+
+```bash
+python train.py \
+  --config configs/single_layer.json \
+  --data-file add.txt \
+  --output-dir runs/single/addition \
+  --pattern-name addition \
+  --epochs 20 \
+  --batch-size 8 \
+  --gradient-accumulation 2 \
+  --eval-every 10 \
+  --freeze-embeddings \
+  --freeze-backbone \
+  --unfreeze-learner
+```
+
+### Model B — small learner at every layer
+
+```bash
+python train.py \
+  --config configs/all_layers.json \
+  --data-file add.txt \
+  --output-dir runs/all/addition \
+  --pattern-name addition \
+  --epochs 20 \
+  --batch-size 8 \
+  --gradient-accumulation 2 \
+  --eval-every 10 \
+  --freeze-embeddings \
+  --freeze-backbone \
+  --unfreeze-learner
+```
+
+## Add multiplication without modifying addition
+
+Load the addition checkpoint, create a new `multiplication` learner, and train only that learner. Existing learners are explicitly frozen.
+
+### Model A
+
+```bash
+python train.py \
+  --config configs/single_layer.json \
+  --source-checkpoint runs/single/addition/best \
+  --data-file multiply.txt \
+  --output-dir runs/single/addition-then-multiplication \
+  --pattern-name multiplication \
+  --epochs 20 \
+  --batch-size 8 \
+  --gradient-accumulation 2 \
+  --eval-every 10 \
+  --freeze-embeddings \
+  --freeze-backbone \
+  --unfreeze-learner
+```
+
+### Model B
+
+```bash
+python train.py \
+  --config configs/all_layers.json \
+  --source-checkpoint runs/all/addition/best \
+  --data-file multiply.txt \
+  --output-dir runs/all/addition-then-multiplication \
+  --pattern-name multiplication \
+  --epochs 20 \
+  --batch-size 8 \
+  --gradient-accumulation 2 \
+  --eval-every 10 \
+  --freeze-embeddings \
+  --freeze-backbone \
+  --unfreeze-learner
+```
+
+The resulting checkpoint contains both `addition` and `multiplication`. Only the learner named by `--pattern-name` is trainable during each run.
+
+## Train other model parts
 
 Learner plus embeddings:
 
@@ -118,42 +161,49 @@ Learner plus embeddings:
 --embedding-lr 1e-5 --learner-lr 3e-4
 ```
 
-Full model plus learner, with three independent learning rates:
+Full model plus learner:
 
 ```bash
 --unfreeze-embeddings --unfreeze-backbone --unfreeze-learner \
 --embedding-lr 5e-6 --backbone-lr 1e-5 --learner-lr 3e-4
 ```
 
-Freeze the learner and train only the original model as a control:
+Original model only control:
 
 ```bash
 --unfreeze-embeddings --unfreeze-backbone --freeze-learner
 ```
 
-At startup, the script prints exact total/trainable counts and learning rates for all three groups. It aborts if every group is frozen.
+At startup, the script prints exact parameter counts, trainable counts, active pattern, and learning rate for every group. It aborts when every group is frozen.
 
-## Evaluate a checkpoint
+## Evaluate either stored learner
 
 ```bash
 python evaluate.py \
-  --checkpoint runs/single-layer/best \
+  --checkpoint runs/single/addition-then-multiplication/best \
+  --pattern-name addition \
   --prompt "What is 31 + 47?"
 ```
 
-Checkpoints store learner weights separately. Any trainable original-model parameters are stored as a named delta file, so frozen runs do not duplicate the 270M base checkpoint.
-
-## Named learners
-
-`PatternLearnerSystem` already supports adding independent names:
-
-```python
-system.add_pattern("addition")
-system.add_pattern("multiplication")
-system.set_active_pattern("addition")
+```bash
+python evaluate.py \
+  --checkpoint runs/single/addition-then-multiplication/best \
+  --pattern-name multiplication \
+  --prompt "What is 13 times 8?"
 ```
 
-Existing learners are not modified when a new learner is registered. Automatic decomposition, learner identification, and creation are intentionally left for the next experiment; this project first tests whether the learner placement itself can absorb a pattern without disturbing frozen knowledge.
+## Checkpoint behavior
+
+Checkpoints store:
+
+- every named learner;
+- the tokenizer;
+- current trainable base parameters;
+- inherited base deltas from a source checkpoint;
+- the dataset split metadata;
+- active pattern and optimizer-group configuration.
+
+Frozen runs do not duplicate the complete 270M base model.
 
 ## Tests
 
@@ -161,4 +211,4 @@ Existing learners are not modified when a new learner is registered. Automatic d
 python -m unittest discover -s tests -v
 ```
 
-The tests verify zero-effect initialization, correct layer placement, parameter matching, tied-embedding deduplication, independent freezing, and separate optimizer learning rates.
+Tests cover zero-effect initialization, layer placement, parameter matching, tied embeddings, independent freezing/LRs, active-pattern-only training, Q/A text parsing, and deterministic splitting.
