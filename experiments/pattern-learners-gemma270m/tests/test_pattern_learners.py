@@ -139,6 +139,43 @@ class PatternLearnerTests(unittest.TestCase):
         }
         self.assertFalse(addition_ids & multiplication_ids)
 
+    def test_only_selected_pattern_is_trainable(self) -> None:
+        model = FakeModel()
+        system = PatternLearnerSystem(8, 4, LearnerLayout("single", 4))
+        system.add_pattern("addition")
+        system.add_pattern("multiplication")
+        system.attach(model)
+
+        _optimizer, summary = build_optimizer(
+            model,
+            system,
+            TrainabilityConfig(
+                freeze_embeddings=True,
+                freeze_backbone=True,
+                freeze_learner=False,
+            ),
+            LearningRates(),
+            trainable_pattern="multiplication",
+        )
+
+        self.assertTrue(
+            all(
+                not parameter.requires_grad
+                for parameter in system.patterns["addition"].parameters()
+            )
+        )
+        self.assertTrue(
+            all(
+                parameter.requires_grad
+                for parameter in system.patterns["multiplication"].parameters()
+            )
+        )
+        self.assertEqual(
+            summary["learner"]["trainable_parameters"],
+            system.learner_parameter_count("multiplication"),
+        )
+        self.assertEqual(summary["learner"]["trainable_pattern"], "multiplication")
+
 
 if __name__ == "__main__":
     unittest.main()
