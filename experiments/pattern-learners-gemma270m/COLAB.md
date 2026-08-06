@@ -31,13 +31,11 @@ notebook_login()
   --batch-size 8 \
   --gradient-accumulation 2 \
   --eval-every 10 \
-  --dtype bfloat16 \
+  --dtype auto \
   --freeze-embeddings \
   --freeze-backbone \
   --unfreeze-learner
 ```
-
-For a GPU without BF16 support, replace `--dtype bfloat16` with `--dtype float16`.
 
 ## 4. Add multiplication to Model A
 
@@ -52,7 +50,7 @@ For a GPU without BF16 support, replace `--dtype bfloat16` with `--dtype float16
   --batch-size 8 \
   --gradient-accumulation 2 \
   --eval-every 10 \
-  --dtype bfloat16 \
+  --dtype auto \
   --freeze-embeddings \
   --freeze-backbone \
   --unfreeze-learner
@@ -70,7 +68,7 @@ For a GPU without BF16 support, replace `--dtype bfloat16` with `--dtype float16
   --batch-size 8 \
   --gradient-accumulation 2 \
   --eval-every 10 \
-  --dtype bfloat16 \
+  --dtype auto \
   --gradient-checkpointing \
   --freeze-embeddings \
   --freeze-backbone \
@@ -90,7 +88,7 @@ For a GPU without BF16 support, replace `--dtype bfloat16` with `--dtype float16
   --batch-size 8 \
   --gradient-accumulation 2 \
   --eval-every 10 \
-  --dtype bfloat16 \
+  --dtype auto \
   --gradient-checkpointing \
   --freeze-embeddings \
   --freeze-backbone \
