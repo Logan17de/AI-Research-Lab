@@ -34,12 +34,15 @@ def main() -> None:
         else torch.float32
     )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint / "tokenizer")
-    model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
+    model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype)
     learner_system = PatternLearnerSystem.load(checkpoint / "learner", model)
     load_trained_base_parameters(model, checkpoint / "trained_base_parameters.pt")
     if args.pattern_name is not None:
         learner_system.set_active_pattern(args.pattern_name)
-    model.to(device).eval()
+
+    # Loaded learner modules are created in float32; convert the complete model so
+    # learner weights match BF16/FP16 hidden states during generation.
+    model.to(device=device, dtype=dtype).eval()
 
     text = f"Question: {args.prompt}\nAnswer:"
     inputs = tokenizer(text, return_tensors="pt").to(device)
