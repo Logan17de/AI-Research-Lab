@@ -36,11 +36,7 @@ def parameter_partitions(
     model: nn.Module,
     learner_system: PatternLearnerSystem,
 ) -> dict[str, list[nn.Parameter]]:
-    """Split unique parameters into embeddings, original backbone, and learners.
-
-    Input embeddings and output embeddings/lm_head are treated as one embedding
-    group. Gemma ties them, so parameter IDs are deduplicated automatically.
-    """
+    """Split unique parameters into embeddings, original backbone, and learners."""
     embedding_ids: set[int] = set()
     for accessor_name in ("get_input_embeddings", "get_output_embeddings"):
         accessor = getattr(model, accessor_name, None)
@@ -78,6 +74,8 @@ def configure_trainability(
     model: nn.Module,
     learner_system: PatternLearnerSystem,
     config: TrainabilityConfig,
+    *,
+    trainable_pattern: str | None = None,
 ) -> dict[str, list[nn.Parameter]]:
     partitions = parameter_partitions(model, learner_system)
     frozen = {
@@ -89,6 +87,17 @@ def configure_trainability(
         requires_grad = not frozen[group_name]
         for parameter in parameters:
             parameter.requires_grad = requires_grad
+
+    if trainable_pattern is not None and not config.freeze_learner:
+        if trainable_pattern not in learner_system.patterns:
+            raise KeyError(f"Unknown trainable pattern: {trainable_pattern!r}")
+        active_ids = {
+            id(parameter)
+            for parameter in learner_system.patterns[trainable_pattern].parameters()
+        }
+        for parameter in partitions["learner"]:
+            parameter.requires_grad = id(parameter) in active_ids
+
     return partitions
 
 
@@ -100,12 +109,18 @@ def build_optimizer(
     *,
     weight_decay: float = 0.01,
     betas: tuple[float, float] = (0.9, 0.95),
+    trainable_pattern: str | None = None,
 ) -> tuple[torch.optim.Optimizer, dict[str, dict[str, Any]]]:
     learning_rates.validate()
     if weight_decay < 0:
         raise ValueError("weight_decay cannot be negative")
 
-    partitions = configure_trainability(model, learner_system, trainability)
+    partitions = configure_trainability(
+        model,
+        learner_system,
+        trainability,
+        trainable_pattern=trainable_pattern,
+    )
     lr_by_group = {
         "embedding": learning_rates.embedding,
         "backbone": learning_rates.backbone,
@@ -124,6 +139,8 @@ def build_optimizer(
             "frozen": trainable_count == 0,
             "learning_rate": lr_by_group[name],
         }
+        if name == "learner":
+            summary[name]["trainable_pattern"] = trainable_pattern
         if trainable:
             optimizer_groups.append(
                 {
