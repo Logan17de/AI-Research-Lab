@@ -1,0 +1,17 @@
+{
+  "learner_kind": "pre_activation",
+  "learner_mode": "all",
+  "learner_dim": 30,
+  "learner_layer": -1,
+  "learner_dropout": 0.0,
+  "standalone_layers": 1,
+  "standalone_ffn_size": 32,
+  "freeze_embeddings": true,
+  "freeze_backbone": true,
+  "freeze_lm_head": true,
+  "freeze_learner": false,
+  "embedding_lr": 0.000001,
+  "backbone_lr": 0.000001,
+  "lm_head_lr": 0.000001,
+  "learner_lr": 0.001
+}
