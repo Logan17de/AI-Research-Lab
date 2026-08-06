@@ -4,6 +4,9 @@ import unittest
 
 import torch
 
+from chat import select_pattern as select_chat_pattern
+from evaluate import select_pattern as select_eval_pattern
+from init_base import numeric_vocabulary_text
 from tiny_pl.model import LearnerLayout, TinyConfig, TinyPatternLM
 from tiny_pl.tokenizer import LiveWordTokenizer
 
@@ -16,6 +19,13 @@ class TinyPatternLearnerTests(unittest.TestCase):
             ["Hello,", "world!", "日本語", "テスト"],
         )
         self.assertEqual(tokenizer.decode(tokenizer.encode("日本語 テスト")), "日本語 テスト")
+
+    def test_numeric_vocabulary_does_not_encode_arithmetic_examples(self) -> None:
+        text = numeric_vocabulary_text(0, 5)
+        self.assertEqual(text, "0 1 2 3 4 5")
+        self.assertNotIn("+", text)
+        with self.assertRaises(ValueError):
+            numeric_vocabulary_text(5, 0)
 
     def test_input_and_output_embeddings_are_untied(self) -> None:
         model = TinyPatternLM(TinyConfig(vocab_size=32))
@@ -47,6 +57,16 @@ class TinyPatternLearnerTests(unittest.TestCase):
         model.set_active_pattern(None)
         base_logits = model(inputs)["logits"]
         self.assertTrue(torch.equal(active_logits, base_logits))
+
+    def test_base_alias_disables_learner(self) -> None:
+        model = TinyPatternLM(TinyConfig(vocab_size=32), LearnerLayout("single", 8))
+        model.add_pattern("addition")
+        select_chat_pattern(model, "base")
+        self.assertIsNone(model.active_pattern)
+        select_eval_pattern(model, "addition")
+        self.assertEqual(model.active_pattern, "addition")
+        select_eval_pattern(model, "none")
+        self.assertIsNone(model.active_pattern)
 
     def test_answer_only_loss_is_finite(self) -> None:
         model = TinyPatternLM(
