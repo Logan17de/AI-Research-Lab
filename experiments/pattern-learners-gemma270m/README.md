@@ -192,6 +192,34 @@ python evaluate.py \
   --prompt "What is 13 times 8?"
 ```
 
+## Interactive chat
+
+Start a terminal chat with any trained checkpoint:
+
+```bash
+python chat.py \
+  --checkpoint runs/single/addition-then-multiplication/best \
+  --pattern-name addition \
+  --dtype auto \
+  --max-new-tokens 32
+```
+
+The chat keeps the model loaded and supports switching learners without restarting:
+
+```text
+/patterns             list learners
+/use addition         activate addition
+/use multiplication   activate multiplication
+/base                 disable all learners
+/settings             show generation settings
+/help                 show commands
+/exit                 quit
+```
+
+Each turn is intentionally independent and uses the same `Question: ...\nAnswer:` format used during training. This avoids introducing unsupported multi-turn formatting into the first arithmetic experiment.
+
+In Colab, use `%run chat.py ...` rather than `!python chat.py ...` so interactive input works correctly. See `COLAB.md`.
+
 ## Checkpoint behavior
 
 Checkpoints store:
@@ -211,4 +239,4 @@ Frozen runs do not duplicate the complete 270M base model.
 python -m unittest discover -s tests -v
 ```
 
-Tests cover zero-effect initialization, layer placement, parameter matching, tied embeddings, independent freezing/LRs, active-pattern-only training, Q/A text parsing, and deterministic splitting.
+Tests cover zero-effect initialization, layer placement, parameter matching, tied embeddings, independent freezing/LRs, active-pattern-only training, Q/A text parsing, deterministic splitting, and interactive chat command handling.
