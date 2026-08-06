@@ -1,0 +1,14 @@
+{
+  "learner_mode": "single",
+  "learner_dim": 128,
+  "learner_layer": -1,
+  "learner_dropout": 0.0,
+  "freeze_embeddings": true,
+  "freeze_backbone": true,
+  "freeze_lm_head": true,
+  "freeze_learner": false,
+  "embedding_lr": 0.000001,
+  "backbone_lr": 0.000001,
+  "lm_head_lr": 0.000001,
+  "learner_lr": 0.001
+}
