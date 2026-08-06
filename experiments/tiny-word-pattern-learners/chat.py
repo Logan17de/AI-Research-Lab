@@ -10,9 +10,21 @@ from tiny_pl import load_run
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Chat with a tiny word-level pattern learner")
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument("--pattern-name")
+    parser.add_argument(
+        "--pattern-name",
+        help="Learner name to activate, or 'base'/'none' to disable all learners.",
+    )
     parser.add_argument("--max-answer-tokens", type=int, default=4)
     return parser.parse_args()
+
+
+def select_pattern(model, name: str | None) -> None:
+    if name is None:
+        return
+    if name.lower() in {"base", "none", "off"}:
+        model.set_active_pattern(None)
+    else:
+        model.set_active_pattern(name)
 
 
 @torch.inference_mode()
@@ -20,8 +32,7 @@ def main() -> None:
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, tokenizer, _ = load_run(args.checkpoint)
-    if args.pattern_name is not None:
-        model.set_active_pattern(args.pattern_name)
+    select_pattern(model, args.pattern_name)
     model.to(device).eval()
 
     print(f"device={device}")
@@ -51,11 +62,11 @@ def main() -> None:
         if text.startswith("/use "):
             name = text[5:].strip()
             try:
-                model.set_active_pattern(name)
+                select_pattern(model, name)
             except KeyError as error:
                 print(error)
             else:
-                print(f"Active pattern: {name}")
+                print(f"Active pattern: {model.active_pattern or 'base'}")
             continue
 
         prompt = f"Question: {text} Answer:"
