@@ -33,22 +33,33 @@ def parse_args() -> argparse.Namespace:
         defaults = json.loads(Path(known.config).read_text(encoding="utf-8"))
 
     parser = argparse.ArgumentParser(
-        description="Train a named learner on a frozen tiny random Transformer",
+        description="Train a named learner placement on a frozen tiny Transformer",
         parents=[pre],
     )
     source = parser.add_mutually_exclusive_group(required=True)
     source.add_argument("--base-checkpoint")
     source.add_argument("--source-checkpoint")
-    parser.add_argument("--data-file", required=True)
+    parser.add_argument("--data-file", required=True, help="Training file, or one file to split")
+    parser.add_argument(
+        "--validation-file",
+        help="Optional fixed validation file. When set, --data-file is used only for training.",
+    )
     parser.add_argument("--output-dir", required=True)
     parser.add_argument("--pattern-name", default="addition")
     parser.add_argument("--validation-ratio", type=float, default=0.2)
     parser.add_argument("--split-seed", type=int, default=42)
 
+    parser.add_argument(
+        "--learner-kind",
+        choices=("residual", "standalone", "pre_activation", "post_activation"),
+        default="residual",
+    )
     parser.add_argument("--learner-mode", choices=("single", "all"), default="single")
     parser.add_argument("--learner-dim", type=int, default=128)
     parser.add_argument("--learner-layer", type=int, default=-1)
     parser.add_argument("--learner-dropout", type=float, default=0.0)
+    parser.add_argument("--standalone-layers", type=int, default=1)
+    parser.add_argument("--standalone-ffn-size", type=int, default=32)
 
     for group in ("embeddings", "backbone", "lm-head", "learner"):
         destination = f"freeze_{group.replace('-', '_')}"
@@ -157,25 +168,32 @@ def configure_optimizer(
     return torch.optim.AdamW(optimizer_groups, betas=(0.9, 0.95)), summary
 
 
-def load_model(args: argparse.Namespace) -> tuple[TinyPatternLM, Any]:
-    requested_layout = LearnerLayout(
+def requested_layout(args: argparse.Namespace) -> LearnerLayout:
+    return LearnerLayout(
         mode=args.learner_mode,
         bottleneck_dim=args.learner_dim,
         single_layer=args.learner_layer,
         dropout=args.learner_dropout,
+        kind=args.learner_kind,
+        standalone_layers=args.standalone_layers,
+        standalone_ffn_size=args.standalone_ffn_size,
     )
+
+
+def load_model(args: argparse.Namespace) -> tuple[TinyPatternLM, Any]:
+    layout = requested_layout(args)
 
     if args.base_checkpoint:
         base_model, tokenizer = load_base(args.base_checkpoint)
-        model = TinyPatternLM(base_model.config, requested_layout)
+        model = TinyPatternLM(base_model.config, layout)
         model.load_state_dict(base_model.state_dict(), strict=True)
         model.add_pattern(args.pattern_name)
         return model, tokenizer
 
-    source_model, tokenizer, payload = load_run(args.source_checkpoint)
-    if source_model.learner_layout != requested_layout:
+    source_model, tokenizer, _ = load_run(args.source_checkpoint)
+    if source_model.learner_layout != layout:
         raise ValueError(
-            f"Requested layout {requested_layout} does not match source layout "
+            f"Requested layout {layout} does not match source layout "
             f"{source_model.learner_layout}"
         )
     if args.pattern_name in source_model.patterns:
@@ -183,6 +201,28 @@ def load_model(args: argparse.Namespace) -> tuple[TinyPatternLM, Any]:
     else:
         source_model.add_pattern(args.pattern_name)
     return source_model, tokenizer
+
+
+def build_rows(args: argparse.Namespace) -> tuple[list[dict[str, str]], list[dict[str, str]], dict[str, Any]]:
+    train_source = load_rows(args.data_file)
+    if args.validation_file:
+        validation = load_rows(args.validation_file)
+        return train_source, validation, {
+            "mode": "fixed_files",
+            "train_file": args.data_file,
+            "validation_file": args.validation_file,
+        }
+    train, validation = split_rows(
+        train_source,
+        validation_ratio=args.validation_ratio,
+        seed=args.split_seed,
+    )
+    return train, validation, {
+        "mode": "deterministic_split",
+        "data_file": args.data_file,
+        "validation_ratio": args.validation_ratio,
+        "split_seed": args.split_seed,
+    }
 
 
 def move_batch(batch: dict[str, torch.Tensor], device: torch.device) -> dict[str, torch.Tensor]:
@@ -246,12 +286,7 @@ def main() -> None:
     model.to(device)
     optimizer, group_summary = configure_optimizer(model, args)
 
-    rows = load_rows(args.data_file)
-    train_rows, validation_rows = split_rows(
-        rows,
-        validation_ratio=args.validation_ratio,
-        seed=args.split_seed,
-    )
+    train_rows, validation_rows, dataset_metadata = build_rows(args)
     train_dataset = AnswerOnlyDataset(
         train_rows,
         tokenizer,
@@ -287,9 +322,10 @@ def main() -> None:
                 "patterns": list(model.patterns.keys()),
                 "active_pattern": model.active_pattern,
                 "active_learner_parameters": model.learner_parameter_count(args.pattern_name),
+                "active_learner_breakdown": model.pattern_parameter_breakdown(args.pattern_name),
                 "optimizer_groups": group_summary,
                 "dataset": {
-                    "total": len(rows),
+                    **dataset_metadata,
                     "train": len(train_rows),
                     "validation": len(validation_rows),
                 },
@@ -305,6 +341,7 @@ def main() -> None:
     evaluations_without_improvement = 0
     global_step = 0
     stopped_early = False
+    last_epoch = 0
     optimizer.zero_grad(set_to_none=True)
 
     def save_checkpoint(name: str, metrics: dict[str, float], epoch: int) -> None:
@@ -316,9 +353,7 @@ def main() -> None:
                 "epoch": epoch,
                 "global_step": global_step,
                 "metrics": metrics,
-                "data_file": args.data_file,
-                "split_seed": args.split_seed,
-                "validation_ratio": args.validation_ratio,
+                "dataset": dataset_metadata,
                 "optimizer_groups": group_summary,
                 "learner_only": (
                     args.freeze_embeddings
@@ -330,6 +365,7 @@ def main() -> None:
         )
 
     for epoch in range(1, args.epochs + 1):
+        last_epoch = epoch
         model.train()
         progress = tqdm(train_loader, desc=f"epoch {epoch}/{args.epochs}")
         for micro_step, batch in enumerate(progress, start=1):
@@ -402,13 +438,18 @@ def main() -> None:
         device,
         args.max_answer_tokens,
     )
-    save_checkpoint("final", final_metrics, epoch)
+    save_checkpoint("final", final_metrics, last_epoch)
+    if best_accuracy < 0:
+        best_accuracy = final_metrics["exact_accuracy"]
+        best_loss = final_metrics["loss"]
+        save_checkpoint("best", final_metrics, last_epoch)
     print(
         json.dumps(
             {
                 "finished": True,
                 "stopped_early": stopped_early,
                 "best_exact_accuracy": best_accuracy,
+                "best_validation_loss": best_loss,
                 "final": final_metrics,
                 "best_checkpoint": str(output_dir / "best"),
                 "final_checkpoint": str(output_dir / "final"),
