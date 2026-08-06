@@ -16,6 +16,7 @@ from pattern_learners.learner import PatternLearnerSystem
 @dataclass(frozen=True)
 class GenerationConfig:
     max_new_tokens: int = 32
+    min_new_tokens: int = 1
     temperature: float = 0.0
     top_p: float = 0.95
     top_k: int = 50
@@ -24,6 +25,10 @@ class GenerationConfig:
     def validate(self) -> None:
         if self.max_new_tokens <= 0:
             raise ValueError("max_new_tokens must be positive")
+        if self.min_new_tokens <= 0:
+            raise ValueError("min_new_tokens must be positive")
+        if self.min_new_tokens > self.max_new_tokens:
+            raise ValueError("min_new_tokens cannot exceed max_new_tokens")
         if self.temperature < 0:
             raise ValueError("temperature cannot be negative")
         if not 0.0 < self.top_p <= 1.0:
@@ -39,16 +44,14 @@ def parse_args() -> argparse.Namespace:
         description="Interactively chat with a trained pattern-learner checkpoint"
     )
     parser.add_argument("--checkpoint", required=True)
-    parser.add_argument(
-        "--pattern-name",
-        help="Initial learner to activate. Defaults to the checkpoint's active learner.",
-    )
+    parser.add_argument("--pattern-name")
     parser.add_argument(
         "--dtype",
         choices=("auto", "float32", "float16", "bfloat16"),
         default="auto",
     )
     parser.add_argument("--max-new-tokens", type=int, default=32)
+    parser.add_argument("--min-new-tokens", type=int, default=1)
     parser.add_argument("--temperature", type=float, default=0.0)
     parser.add_argument("--top-p", type=float, default=0.95)
     parser.add_argument("--top-k", type=int, default=50)
@@ -71,12 +74,10 @@ def resolve_dtype(name: str, device: torch.device) -> torch.dtype:
 
 
 def clean_generated_answer(text: str) -> str:
-    """Keep the first generated answer line and remove prompt-like spillover."""
     answer = text.strip()
     if not answer:
         return "<empty response>"
-
-    lines = []
+    lines: list[str] = []
     for line in answer.splitlines():
         stripped = line.strip()
         if not stripped:
@@ -87,7 +88,6 @@ def clean_generated_answer(text: str) -> str:
         if lines and (lowered.startswith("question:") or lowered.startswith("user:")):
             break
         lines.append(stripped)
-
     return " ".join(lines).strip() or "<empty response>"
 
 
@@ -95,30 +95,22 @@ def parse_chat_command(text: str) -> tuple[str, str | None] | None:
     stripped = text.strip()
     if not stripped.startswith("/"):
         return None
-    command_text = stripped[1:]
-    command, separator, argument = command_text.partition(" ")
-    normalized = command.lower()
+    command, separator, argument = stripped[1:].partition(" ")
     aliases = {
         "q": "exit",
         "quit": "exit",
-        "patterns": "patterns",
         "ls": "patterns",
-        "use": "use",
-        "base": "base",
         "none": "base",
-        "help": "help",
         "h": "help",
-        "settings": "settings",
     }
+    normalized = command.lower()
     return aliases.get(normalized, normalized), argument.strip() if separator else None
 
 
-def generation_kwargs(
-    config: GenerationConfig,
-    tokenizer: Any,
-) -> dict[str, Any]:
+def generation_kwargs(config: GenerationConfig, tokenizer: Any) -> dict[str, Any]:
     kwargs: dict[str, Any] = {
         "max_new_tokens": config.max_new_tokens,
+        "min_new_tokens": config.min_new_tokens,
         "do_sample": config.temperature > 0,
         "pad_token_id": tokenizer.pad_token_id,
         "eos_token_id": tokenizer.eos_token_id,
@@ -126,11 +118,9 @@ def generation_kwargs(
     }
     if config.temperature > 0:
         kwargs.update(
-            {
-                "temperature": config.temperature,
-                "top_p": config.top_p,
-                "top_k": config.top_k,
-            }
+            temperature=config.temperature,
+            top_p=config.top_p,
+            top_k=config.top_k,
         )
     return kwargs
 
@@ -143,12 +133,10 @@ def answer_question(
     device: torch.device,
     config: GenerationConfig,
 ) -> str:
-    prompt = f"Question: {question.strip()}\nAnswer:"
+    # Training used an exact trailing space after `Answer:`. Keep inference identical.
+    prompt = f"Question: {question.strip()}\nAnswer: "
     inputs = tokenizer(prompt, return_tensors="pt").to(device)
-    output = model.generate(
-        **inputs,
-        **generation_kwargs(config, tokenizer),
-    )
+    output = model.generate(**inputs, **generation_kwargs(config, tokenizer))
     generated_ids = output[0, inputs["input_ids"].shape[1] :]
     decoded = tokenizer.decode(generated_ids, skip_special_tokens=True)
     return clean_generated_answer(decoded)
@@ -184,6 +172,7 @@ def run_chat() -> None:
 
     config = GenerationConfig(
         max_new_tokens=args.max_new_tokens,
+        min_new_tokens=args.min_new_tokens,
         temperature=args.temperature,
         top_p=args.top_p,
         top_k=args.top_k,
@@ -204,12 +193,9 @@ def run_chat() -> None:
     model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype)
     learner_system = PatternLearnerSystem.load(checkpoint / "learner", model)
     load_trained_base_parameters(model, checkpoint / "trained_base_parameters.pt")
-
     if args.pattern_name is not None:
         learner_system.set_active_pattern(args.pattern_name)
 
-    # Checkpoint-loaded learner modules start as float32. Explicit dtype conversion
-    # keeps them aligned with the BF16/FP16 hidden states used by the base model.
     model.to(device=device, dtype=dtype).eval()
     model.config.use_cache = True
 
@@ -225,7 +211,6 @@ def run_chat() -> None:
         except (EOFError, KeyboardInterrupt):
             print("\nBye.")
             break
-
         if not user_text:
             continue
 
@@ -237,31 +222,26 @@ def run_chat() -> None:
                 break
             if command == "help":
                 print_help()
-                continue
-            if command == "patterns":
+            elif command == "patterns":
                 print_patterns(learner_system)
-                continue
-            if command == "settings":
+            elif command == "settings":
                 print(config)
-                continue
-            if command == "base":
+            elif command == "base":
                 learner_system.set_active_pattern(None)
                 print("Active learner: base")
-                continue
-            if command == "use":
+            elif command == "use":
                 if not argument:
                     print("Usage: /use NAME")
-                    continue
-                try:
-                    learner_system.set_active_pattern(argument)
-                except KeyError:
-                    print(f"Unknown learner: {argument!r}")
-                    print_patterns(learner_system)
                 else:
-                    print(f"Active learner: {argument}")
-                continue
-
-            print(f"Unknown command: /{command}. Use /help.")
+                    try:
+                        learner_system.set_active_pattern(argument)
+                    except KeyError:
+                        print(f"Unknown learner: {argument!r}")
+                        print_patterns(learner_system)
+                    else:
+                        print(f"Active learner: {argument}")
+            else:
+                print(f"Unknown command: /{command}. Use /help.")
             continue
 
         try:
