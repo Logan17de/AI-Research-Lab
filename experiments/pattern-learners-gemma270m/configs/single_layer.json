@@ -1,0 +1,12 @@
+{
+  "model_name": "google/gemma-3-270m",
+  "learner_mode": "single",
+  "learner_dim": 640,
+  "learner_layer": -1,
+  "freeze_embeddings": true,
+  "freeze_backbone": true,
+  "freeze_learner": false,
+  "embedding_lr": 1e-5,
+  "backbone_lr": 1e-5,
+  "learner_lr": 3e-4
+}

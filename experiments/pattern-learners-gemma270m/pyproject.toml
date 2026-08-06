@@ -1,0 +1,8 @@
+[project]
+name = "pattern-learners-gemma270m"
+version = "0.1.0"
+description = "Named residual pattern learners for Gemma 3 270M"
+requires-python = ">=3.10"
+
+[tool.ruff]
+line-length = 100
