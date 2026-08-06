@@ -54,7 +54,8 @@ class LearnerLayout:
             raise ValueError("learner bottleneck_dim must be positive")
         if not 0.0 <= self.dropout < 1.0:
             raise ValueError("learner dropout must be in [0, 1)")
-        normalize_layer_index(self.single_layer, num_layers)
+        if self.mode == "single":
+            normalize_layer_index(self.single_layer, num_layers)
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -75,7 +76,8 @@ class RMSNorm(nn.Module):
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
         dtype = x.dtype
-        normalized = x.float() * torch.rsqrt(x.float().pow(2).mean(dim=-1, keepdim=True) + self.eps)
+        values = x.float()
+        normalized = values * torch.rsqrt(values.pow(2).mean(dim=-1, keepdim=True) + self.eps)
         return normalized.to(dtype) * self.weight.to(dtype)
 
 
@@ -188,7 +190,7 @@ class PatternModules(nn.Module):
             }
         )
 
-    def apply(self, layer_index: int, x: torch.Tensor) -> torch.Tensor:
+    def apply_at_layer(self, layer_index: int, x: torch.Tensor) -> torch.Tensor:
         key = str(layer_index)
         return self.adapters[key](x) if key in self.adapters else x
 
@@ -244,7 +246,7 @@ class TinyPatternLM(nn.Module):
         for layer_index, block in enumerate(self.blocks):
             x = block(x)
             if self.active_pattern is not None:
-                x = self.patterns[self.active_pattern].apply(layer_index, x)
+                x = self.patterns[self.active_pattern].apply_at_layer(layer_index, x)
         logits = self.lm_head(self.final_norm(x))
         output = {"logits": logits}
         if labels is not None:
@@ -265,8 +267,12 @@ class TinyPatternLM(nn.Module):
         eos_id: int,
         max_new_tokens: int = 4,
     ) -> torch.Tensor:
+        if max_new_tokens <= 0:
+            raise ValueError("max_new_tokens must be positive")
         generated = input_ids
         for _ in range(max_new_tokens):
+            if generated.shape[1] >= self.config.max_seq_len:
+                break
             logits = self(generated)["logits"][:, -1, :]
             next_id = logits.argmax(dim=-1, keepdim=True)
             generated = torch.cat((generated, next_id), dim=1)
