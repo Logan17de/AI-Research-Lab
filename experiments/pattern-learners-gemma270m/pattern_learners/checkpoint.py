@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Iterable
 
 import torch
 from torch import nn
@@ -18,6 +18,7 @@ def save_experiment_checkpoint(
     tokenizer: Any,
     *,
     training_summary: dict[str, Any],
+    inherited_base_parameter_names: Iterable[str] = (),
 ) -> None:
     output = Path(output_directory)
     output.mkdir(parents=True, exist_ok=True)
@@ -26,18 +27,23 @@ def save_experiment_checkpoint(
 
     partitions = parameter_partitions(model, learner_system)
     learner_ids = {id(parameter) for parameter in partitions["learner"]}
-    trainable_base = {
+    inherited_names = set(inherited_base_parameter_names)
+    base_parameters = {
         name: parameter.detach().cpu()
         for name, parameter in model.named_parameters()
-        if parameter.requires_grad and id(parameter) not in learner_ids
+        if id(parameter) not in learner_ids
+        and (parameter.requires_grad or name in inherited_names)
     }
-    torch.save(trainable_base, output / "trained_base_parameters.pt")
+    torch.save(base_parameters, output / "trained_base_parameters.pt")
     (output / "training_summary.json").write_text(
         json.dumps(training_summary, indent=2), encoding="utf-8"
     )
 
 
-def load_trained_base_parameters(model: nn.Module, checkpoint_path: str | Path) -> None:
+def load_trained_base_parameters(
+    model: nn.Module,
+    checkpoint_path: str | Path,
+) -> set[str]:
     state = torch.load(checkpoint_path, map_location="cpu")
     named_parameters = dict(model.named_parameters())
     missing = [name for name in state if name not in named_parameters]
@@ -52,3 +58,4 @@ def load_trained_base_parameters(model: nn.Module, checkpoint_path: str | Path) 
                     f"checkpoint={tuple(tensor.shape)}"
                 )
             parameter.copy_(tensor.to(device=parameter.device, dtype=parameter.dtype))
+    return set(state)
