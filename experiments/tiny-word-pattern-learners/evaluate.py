@@ -13,7 +13,10 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Evaluate exact answers from a tiny pattern learner")
     parser.add_argument("--checkpoint", required=True)
     parser.add_argument("--data-file", required=True)
-    parser.add_argument("--pattern-name")
+    parser.add_argument(
+        "--pattern-name",
+        help="Learner name to activate, or 'base'/'none' to disable all learners.",
+    )
     parser.add_argument("--validation-only", action="store_true")
     parser.add_argument("--validation-ratio", type=float, default=0.2)
     parser.add_argument("--split-seed", type=int, default=42)
@@ -22,13 +25,21 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+def select_pattern(model, name: str | None) -> None:
+    if name is None:
+        return
+    if name.lower() in {"base", "none", "off"}:
+        model.set_active_pattern(None)
+    else:
+        model.set_active_pattern(name)
+
+
 @torch.inference_mode()
 def main() -> None:
     args = parse_args()
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model, tokenizer, payload = load_run(args.checkpoint)
-    if args.pattern_name is not None:
-        model.set_active_pattern(args.pattern_name)
+    select_pattern(model, args.pattern_name)
     model.to(device).eval()
 
     rows = load_rows(args.data_file)
