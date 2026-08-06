@@ -2,36 +2,132 @@ from __future__ import annotations
 
 import json
 import random
+import re
 from pathlib import Path
-from typing import Any
+from typing import Any, Sequence
 
 import torch
 from torch.utils.data import Dataset
 
 
-class PromptAnswerDataset(Dataset[dict[str, torch.Tensor]]):
-    """JSONL causal-LM dataset with answer-only loss."""
+_Q_PATTERN = re.compile(r"^\s*(?:\d+\.\s*)?Q:\s*(.+?)\s*$")
+_A_PATTERN = re.compile(r"^\s*A:\s*(.+?)\s*$")
 
-    def __init__(
-        self,
-        path: str | Path,
-        tokenizer: Any,
-        *,
-        max_length: int = 256,
-    ) -> None:
-        self.tokenizer = tokenizer
-        self.max_length = max_length
-        self.rows: list[dict[str, str]] = []
-        with Path(path).open("r", encoding="utf-8") as handle:
+
+def load_prompt_answer_rows(path: str | Path) -> list[dict[str, str]]:
+    """Load either JSONL rows or the repository's numbered Q/A text format."""
+    source = Path(path)
+    if not source.exists():
+        raise FileNotFoundError(source)
+
+    if source.suffix.lower() == ".jsonl":
+        rows: list[dict[str, str]] = []
+        with source.open("r", encoding="utf-8") as handle:
             for line_number, line in enumerate(handle, start=1):
                 if not line.strip():
                     continue
                 row = json.loads(line)
-                if not isinstance(row.get("prompt"), str) or not isinstance(row.get("answer"), str):
-                    raise ValueError(f"Invalid row at line {line_number}: prompt and answer are required")
-                self.rows.append({"prompt": row["prompt"], "answer": row["answer"]})
+                prompt = row.get("prompt")
+                answer = row.get("answer")
+                if not isinstance(prompt, str) or not isinstance(answer, str):
+                    raise ValueError(
+                        f"Invalid JSONL row at {source}:{line_number}; "
+                        "prompt and answer strings are required"
+                    )
+                rows.append({"prompt": prompt.strip(), "answer": answer.strip()})
+    else:
+        rows = parse_numbered_qa_text(source.read_text(encoding="utf-8"), source=str(source))
+
+    if not rows:
+        raise ValueError(f"No training examples found in {source}")
+    return rows
+
+
+def parse_numbered_qa_text(text: str, *, source: str = "<text>") -> list[dict[str, str]]:
+    """Parse blocks such as `1. Q: ...` followed by `A: ...`."""
+    rows: list[dict[str, str]] = []
+    pending_prompt: str | None = None
+
+    for line_number, line in enumerate(text.splitlines(), start=1):
+        if not line.strip():
+            continue
+
+        question_match = _Q_PATTERN.match(line)
+        if question_match:
+            if pending_prompt is not None:
+                raise ValueError(
+                    f"Question at {source}:{line_number} appeared before the previous answer"
+                )
+            pending_prompt = question_match.group(1).strip()
+            continue
+
+        answer_match = _A_PATTERN.match(line)
+        if answer_match:
+            if pending_prompt is None:
+                raise ValueError(f"Answer at {source}:{line_number} has no question")
+            rows.append(
+                {
+                    "prompt": pending_prompt,
+                    "answer": answer_match.group(1).strip(),
+                }
+            )
+            pending_prompt = None
+            continue
+
+        raise ValueError(
+            f"Unrecognized non-empty line at {source}:{line_number}: {line.strip()!r}"
+        )
+
+    if pending_prompt is not None:
+        raise ValueError(f"Final question in {source} has no answer")
+    return rows
+
+
+def split_prompt_answer_rows(
+    rows: Sequence[dict[str, str]],
+    *,
+    validation_ratio: float = 0.2,
+    seed: int = 42,
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    """Create a deterministic shuffled train/validation split."""
+    if len(rows) < 2:
+        raise ValueError("At least two examples are required for a train/validation split")
+    if not 0.0 < validation_ratio < 1.0:
+        raise ValueError("validation_ratio must be between 0 and 1")
+
+    indices = list(range(len(rows)))
+    random.Random(seed).shuffle(indices)
+    validation_count = max(1, round(len(rows) * validation_ratio))
+    validation_count = min(validation_count, len(rows) - 1)
+    validation_indices = set(indices[:validation_count])
+
+    train_rows = [dict(row) for index, row in enumerate(rows) if index not in validation_indices]
+    validation_rows = [dict(row) for index, row in enumerate(rows) if index in validation_indices]
+    return train_rows, validation_rows
+
+
+class PromptAnswerDataset(Dataset[dict[str, torch.Tensor]]):
+    """Causal-LM dataset with answer-only loss."""
+
+    def __init__(
+        self,
+        path: str | Path | None,
+        tokenizer: Any,
+        *,
+        max_length: int = 256,
+        rows: Sequence[dict[str, str]] | None = None,
+    ) -> None:
+        if (path is None) == (rows is None):
+            raise ValueError("Provide exactly one of path or rows")
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+        loaded_rows = load_prompt_answer_rows(path) if path is not None else list(rows or [])
+        self.rows = [
+            {"prompt": row["prompt"].strip(), "answer": row["answer"].strip()}
+            for row in loaded_rows
+        ]
         if not self.rows:
-            raise ValueError(f"No training examples found in {path}")
+            raise ValueError("No training examples were provided")
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -100,7 +196,7 @@ def write_arithmetic_dataset(
     minimum: int = 0,
     maximum: int = 99,
 ) -> None:
-    """Create deterministic arithmetic data for the first learner experiment."""
+    """Create deterministic arithmetic data for optional larger experiments."""
     if operation not in {"addition", "multiplication", "star"}:
         raise ValueError("operation must be addition, multiplication, or star")
     if minimum > maximum:
