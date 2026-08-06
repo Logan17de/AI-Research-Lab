@@ -1,0 +1,599 @@
+1. Q: What is 11 × 2?
+   A: 22
+
+2. Q: What's 2 times 13?
+   A: 26
+
+3. Q: Calculate 27 × 5.
+   A: 135
+
+4. Q: 12 × 9 = ?
+   A: 108
+
+5. Q: Multiply 23 and 10.
+   A: 230
+
+6. Q: How much is 6 × 19?
+   A: 114
+
+7. Q: Can you tell me 7 times 1?
+   A: 7
+
+8. Q: Solve: 2 × 3
+   A: 6
+
+9. Q: Quick, 23 times 5?
+   A: 115
+
+10. Q: How many is 21 × 24?
+   A: 504
+
+11. Q: Hey, what's 13 × 10?
+   A: 130
+
+12. Q: I need to multiply 13 and 18, what do I get?
+   A: 234
+
+13. Q: Do the product of 7 and 4.
+   A: 28
+
+14. Q: What's the product of 16 and 11?
+   A: 176
+
+15. Q: I'm trying to figure out 27 × 2. Can you help?
+   A: 54
+
+16. Q: Please calculate the product of 29 and 10 for me.
+   A: 290
+
+17. Q: What do you get when you multiply 99 by 8?
+   A: 792
+
+18. Q: Find the result of multiplying 22 and 9 together.
+   A: 198
+
+19. Q: Could you multiply these numbers: 3 and 4?
+   A: 12
+
+20. Q: I have a question: what is 12 times 3 equal to?
+   A: 36
+
+21. Q: If I have 15 groups of 8, how many in total?
+   A: 120
+
+22. Q: There are 8 boxes with 16 apples each. How many apples total?
+   A: 128
+
+23. Q: I bought 54 items at $6 each. What's the total cost?
+   A: 324
+
+24. Q: A bus makes 3 trips with 15 passengers each. How many passengers total?
+   A: 45
+
+25. Q: She walked 9 steps, 2 times. Total steps?
+   A: 18
+
+26. Q: My score was 14, then multiplied by 3. New score?
+   A: 42
+
+27. Q: There were 45 birds in each of 6 trees. How many birds?
+   A: 270
+
+28. Q: I saved $25 each month for 24 months. Total savings?
+   A: 600
+
+29. Q: The box has 56 toys in each of 5 compartments. How many toys total?
+   A: 280
+
+30. Q: He is 46 years old and his sister is 3 times older. How old is she?
+   A: 138
+
+31. Q: Can you help me with this? What is 1 × 11?
+   A: 11
+
+32. Q: I was wondering, how much is 9 times 14?
+   A: 126
+
+33. Q: Let's say I have 28 items and each costs 3. What's the total?
+   A: 84
+
+34. Q: In a store, there are 12 shelves with 8 items each. How many total?
+   A: 96
+
+35. Q: My team scored 58 points in each of 6 games. Total points?
+   A: 348
+
+36. Q: The recipe needs 30 grams of flour for each of 12 batches. Total flour needed?
+   A: 360
+
+37. Q: Yesterday I read 3 pages for each of 6 hours. How many pages did I read?
+   A: 18
+
+38. Q: There are 13 students in each of 5 classes. How many students altogether?
+   A: 65
+
+39. Q: I collected 27 stamps from each of 12 countries. Total stamps?
+   A: 324
+
+40. Q: The temperature rose by 25 degrees each hour for 7 hours. What's the total rise?
+   A: 175
+
+41. Q: What is 4 × 7?
+   A: 28
+
+42. Q: What's 15 times 6?
+   A: 90
+
+43. Q: Calculate 33 × 4.
+   A: 132
+
+44. Q: 18 × 12 = ?
+   A: 216
+
+45. Q: Multiply 67 and 3.
+   A: 201
+
+46. Q: How much is 9 × 14?
+   A: 126
+
+47. Q: Can you tell me 5 times 8?
+   A: 40
+
+48. Q: Solve: 11 × 9
+   A: 99
+
+49. Q: Quick, 41 times 6?
+   A: 246
+
+50. Q: How many is 14 × 17?
+   A: 238
+
+51. Q: Hey, what's 38 × 4?
+   A: 152
+
+52. Q: I need to multiply 19 and 7, what do I get?
+   A: 133
+
+53. Q: Do the product of 6 and 11.
+   A: 66
+
+54. Q: What's the product of 8 and 13?
+   A: 104
+
+55. Q: I'm trying to figure out 26 × 4. Can you help?
+   A: 104
+
+56. Q: Please calculate the product of 43 and 16 for me.
+   A: 688
+
+57. Q: What do you get when you multiply 9 by 3?
+   A: 27
+
+58. Q: Find the result of multiplying 10 and 10 together.
+   A: 100
+
+59. Q: Could you multiply these numbers: 48 and 8?
+   A: 384
+
+60. Q: I have a question: what is 11 times 22 equal to?
+   A: 242
+
+61. Q: If I have 98 groups of 5, how many in total?
+   A: 490
+
+62. Q: There are 46 boxes with 10 apples each. How many apples total?
+   A: 460
+
+63. Q: I bought 7 items at $11 each. What's the total cost?
+   A: 77
+
+64. Q: A bus makes 13 trips with 9 passengers each. How many passengers total?
+   A: 117
+
+65. Q: She walked 43 steps, 9 times. Total steps?
+   A: 387
+
+66. Q: My score was 8, then multiplied by 12. New score?
+   A: 96
+
+67. Q: There were 38 birds in each of 3 trees. How many birds?
+   A: 114
+
+68. Q: I saved $22 each month for 1 months. Total savings?
+   A: 22
+
+69. Q: The box has 10 toys in each of 9 compartments. How many toys total?
+   A: 90
+
+70. Q: He is 9 years old and his sister is 11 times older. How old is she?
+   A: 99
+
+71. Q: Can you help me with this? What is 24 × 2?
+   A: 48
+
+72. Q: I was wondering, how much is 7 times 25?
+   A: 175
+
+73. Q: Let's say I have 17 items and each costs 5. What's the total?
+   A: 85
+
+74. Q: In a store, there are 5 shelves with 2 items each. How many total?
+   A: 10
+
+75. Q: My team scored 6 points in each of 2 games. Total points?
+   A: 12
+
+76. Q: The recipe needs 18 grams of flour for each of 5 batches. Total flour needed?
+   A: 90
+
+77. Q: Yesterday I read 27 pages for each of 12 hours. How many pages did I read?
+   A: 324
+
+78. Q: There are 20 students in each of 11 classes. How many students altogether?
+   A: 220
+
+79. Q: I collected 79 stamps from each of 4 countries. Total stamps?
+   A: 316
+
+80. Q: The temperature rose by 47 degrees each hour for 19 hours. What's the total rise?
+   A: 893
+
+81. Q: What is 10 × 8?
+   A: 80
+
+82. Q: What's 9 times 14?
+   A: 126
+
+83. Q: Calculate 40 × 8.
+   A: 320
+
+84. Q: 11 × 8 = ?
+   A: 88
+
+85. Q: Multiply 22 and 8.
+   A: 176
+
+86. Q: How much is 23 × 14?
+   A: 322
+
+87. Q: Can you tell me 7 times 8?
+   A: 56
+
+88. Q: Solve: 3 × 12
+   A: 36
+
+89. Q: Quick, 16 times 2?
+   A: 32
+
+90. Q: How many is 17 × 15?
+   A: 255
+
+91. Q: Hey, what's 23 × 5?
+   A: 115
+
+92. Q: I need to multiply 13 and 7, what do I get?
+   A: 91
+
+93. Q: Do the product of 9 and 8.
+   A: 72
+
+94. Q: What's the product of 6 and 8?
+   A: 48
+
+95. Q: I'm trying to figure out 35 × 3. Can you help?
+   A: 105
+
+96. Q: Please calculate the product of 28 and 11 for me.
+   A: 308
+
+97. Q: What do you get when you multiply 72 by 4?
+   A: 288
+
+98. Q: Find the result of multiplying 15 and 14 together.
+   A: 210
+
+99. Q: Could you multiply these numbers: 4 and 9?
+   A: 36
+
+100. Q: I have a question: what is 8 times 16 equal to?
+   A: 128
+
+101. Q: If I have 32 groups of 7, how many in total?
+   A: 224
+
+102. Q: There are 19 boxes with 12 apples each. How many apples total?
+   A: 228
+
+103. Q: I bought 45 items at $2 each. What's the total cost?
+   A: 90
+
+104. Q: A bus makes 8 trips with 11 passengers each. How many passengers total?
+   A: 88
+
+105. Q: She walked 21 steps, 6 times. Total steps?
+   A: 126
+
+106. Q: My score was 12, then multiplied by 9. New score?
+   A: 108
+
+107. Q: There were 29 birds in each of 5 trees. How many birds?
+   A: 145
+
+108. Q: I saved $14 each month for 8 months. Total savings?
+   A: 112
+
+109. Q: The box has 33 toys in each of 4 compartments. How many toys total?
+   A: 132
+
+110. Q: He is 15 years old and his sister is 6 times older. How old is she?
+   A: 90
+
+111. Q: Can you help me with this? What is 5 × 12?
+   A: 60
+
+112. Q: I was wondering, how much is 18 times 4?
+   A: 72
+
+113. Q: Let's say I have 36 items and each costs 7. What's the total?
+   A: 252
+
+114. Q: In a store, there are 9 shelves with 10 items each. How many total?
+   A: 90
+
+115. Q: My team scored 25 points in each of 8 games. Total points?
+   A: 200
+
+116. Q: The recipe needs 22 grams of flour for each of 9 batches. Total flour needed?
+   A: 198
+
+117. Q: Yesterday I read 8 pages for each of 7 hours. How many pages did I read?
+   A: 56
+
+118. Q: There are 14 students in each of 6 classes. How many students altogether?
+   A: 84
+
+119. Q: I collected 51 stamps from each of 3 countries. Total stamps?
+   A: 153
+
+120. Q: The temperature rose by 16 degrees each hour for 11 hours. What's the total rise?
+   A: 176
+
+121. Q: What is 2 × 9?
+   A: 18
+
+122. Q: What's 13 times 5?
+   A: 65
+
+123. Q: Calculate 48 × 3.
+   A: 144
+
+124. Q: 7 × 15 = ?
+   A: 105
+
+125. Q: Multiply 54 and 6.
+   A: 324
+
+126. Q: How much is 11 × 17?
+   A: 187
+
+127. Q: Can you tell me 6 times 10?
+   A: 60
+
+128. Q: Solve: 4 × 11
+   A: 44
+
+129. Q: Quick, 29 times 7?
+   A: 203
+
+130. Q: How many is 22 × 13?
+   A: 286
+
+131. Q: Hey, what's 31 × 8?
+   A: 248
+
+132. Q: I need to multiply 16 and 9, what do I get?
+   A: 144
+
+133. Q: Do the product of 12 and 5.
+   A: 60
+
+134. Q: What's the product of 19 and 4?
+   A: 76
+
+135. Q: I'm trying to figure out 42 × 5. Can you help?
+   A: 210
+
+136. Q: Please calculate the product of 37 and 8 for me.
+   A: 296
+
+137. Q: What do you get when you multiply 63 by 2?
+   A: 126
+
+138. Q: Find the result of multiplying 24 and 11 together.
+   A: 264
+
+139. Q: Could you multiply these numbers: 7 and 6?
+   A: 42
+
+140. Q: I have a question: what is 15 times 8 equal to?
+   A: 120
+
+141. Q: If I have 27 groups of 9, how many in total?
+   A: 243
+
+142. Q: There are 34 boxes with 5 apples each. How many apples total?
+   A: 170
+
+143. Q: I bought 21 items at $8 each. What's the total cost?
+   A: 168
+
+144. Q: A bus makes 11 trips with 7 passengers each. How many passengers total?
+   A: 77
+
+145. Q: She walked 18 steps, 8 times. Total steps?
+   A: 144
+
+146. Q: My score was 17, then multiplied by 5. New score?
+   A: 85
+
+147. Q: There were 41 birds in each of 4 trees. How many birds?
+   A: 164
+
+148. Q: I saved $31 each month for 6 months. Total savings?
+   A: 186
+
+149. Q: The box has 28 toys in each of 7 compartments. How many toys total?
+   A: 196
+
+150. Q: He is 12 years old and his sister is 9 times older. How old is she?
+   A: 108
+
+151. Q: Can you help me with this? What is 8 × 6?
+   A: 48
+
+152. Q: I was wondering, how much is 20 times 3?
+   A: 60
+
+153. Q: Let's say I have 49 items and each costs 4. What's the total?
+   A: 196
+
+154. Q: In a store, there are 15 shelves with 3 items each. How many total?
+   A: 45
+
+155. Q: My team scored 33 points in each of 5 games. Total points?
+   A: 165
+
+156. Q: The recipe needs 14 grams of flour for each of 10 batches. Total flour needed?
+   A: 140
+
+157. Q: Yesterday I read 11 pages for each of 9 hours. How many pages did I read?
+   A: 99
+
+158. Q: There are 25 students in each of 4 classes. How many students altogether?
+   A: 100
+
+159. Q: I collected 62 stamps from each of 2 countries. Total stamps?
+   A: 124
+
+160. Q: The temperature rose by 9 degrees each hour for 15 hours. What's the total rise?
+   A: 135
+
+161. Q: What is 3 × 11?
+   A: 33
+
+162. Q: What's 12 times 3?
+   A: 36
+
+163. Q: Calculate 10 × 2.
+   A: 20
+
+164. Q: 9 × 8 = ?
+   A: 72
+
+165. Q: Multiply 17 and 11.
+   A: 187
+
+166. Q: How much is 12 × 23?
+   A: 276
+
+167. Q: Can you tell me 86 times 2?
+   A: 172
+
+168. Q: Solve: 40 × 3
+   A: 120
+
+169. Q: Quick, 7 times 11?
+   A: 77
+
+170. Q: How many is 20 × 11?
+   A: 220
+
+171. Q: Hey, what's 43 × 7?
+   A: 301
+
+172. Q: I need to multiply 13 and 11, what do I get?
+   A: 143
+
+173. Q: Do the product of 95 and 7.
+   A: 665
+
+174. Q: What's the product of 16 and 9?
+   A: 144
+
+175. Q: I'm trying to figure out 7 × 3. Can you help?
+   A: 21
+
+176. Q: Please calculate the product of 11 and 9 for me.
+   A: 99
+
+177. Q: What do you get when you multiply 30 by 3?
+   A: 90
+
+178. Q: Find the result of multiplying 5 and 19 together.
+   A: 95
+
+179. Q: Could you multiply these numbers: 89 and 3?
+   A: 267
+
+180. Q: I have a question: what is 5 times 18 equal to?
+   A: 90
+
+181. Q: If I have 4 groups of 9, how many in total?
+   A: 36
+
+182. Q: There are 10 boxes with 4 apples each. How many apples total?
+   A: 40
+
+183. Q: I bought 32 items at $3 each. What's the total cost?
+   A: 96
+
+184. Q: A bus makes 12 trips with 16 passengers each. How many passengers total?
+   A: 192
+
+185. Q: She walked 46 steps, 4 times. Total steps?
+   A: 184
+
+186. Q: My score was 29, then multiplied by 18. New score?
+   A: 522
+
+187. Q: There were 12 birds in each of 5 trees. How many birds?
+   A: 60
+
+188. Q: I saved $18 each month for 2 months. Total savings?
+   A: 36
+
+189. Q: The box has 45 toys in each of 6 compartments. How many toys total?
+   A: 270
+
+190. Q: He is 26 years old and his sister is 8 times older. How old is she?
+   A: 208
+
+191. Q: Can you help me with this? What is 27 × 6?
+   A: 162
+
+192. Q: I was wondering, how much is 8 times 4?
+   A: 32
+
+193. Q: Let's say I have 12 items and each costs 9. What's the total?
+   A: 108
+
+194. Q: In a store, there are 6 shelves with 6 items each. How many total?
+   A: 36
+
+195. Q: My team scored 28 points in each of 11 games. Total points?
+   A: 308
+
+196. Q: The recipe needs 11 grams of flour for each of 15 batches. Total flour needed?
+   A: 165
+
+197. Q: Yesterday I read 36 pages for each of 6 hours. How many pages did I read?
+   A: 216
+
+198. Q: There are 33 students in each of 16 classes. How many students altogether?
+   A: 528
+
+199. Q: I collected 5 stamps from each of 1 countries. Total stamps?
+   A: 5
+
+200. Q: The temperature rose by 4 degrees each hour for 12 hours. What's the total rise?
+   A: 48
