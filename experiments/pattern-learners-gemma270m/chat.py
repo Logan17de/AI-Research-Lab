@@ -208,7 +208,9 @@ def run_chat() -> None:
     if args.pattern_name is not None:
         learner_system.set_active_pattern(args.pattern_name)
 
-    model.to(device).eval()
+    # Checkpoint-loaded learner modules start as float32. Explicit dtype conversion
+    # keeps them aligned with the BF16/FP16 hidden states used by the base model.
+    model.to(device=device, dtype=dtype).eval()
     model.config.use_cache = True
 
     print("\nInteractive pattern-learner chat")
