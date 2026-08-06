@@ -17,6 +17,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--pattern-name")
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--max-new-tokens", type=int, default=32)
+    parser.add_argument("--min-new-tokens", type=int, default=1)
     parser.add_argument("--temperature", type=float, default=0.0)
     return parser.parse_args()
 
@@ -34,29 +35,33 @@ def main() -> None:
         else torch.float32
     )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint / "tokenizer")
+    if tokenizer.pad_token_id is None:
+        tokenizer.pad_token = tokenizer.eos_token
     model = AutoModelForCausalLM.from_pretrained(model_name, dtype=dtype)
     learner_system = PatternLearnerSystem.load(checkpoint / "learner", model)
     load_trained_base_parameters(model, checkpoint / "trained_base_parameters.pt")
     if args.pattern_name is not None:
         learner_system.set_active_pattern(args.pattern_name)
 
-    # Loaded learner modules are created in float32; convert the complete model so
-    # learner weights match BF16/FP16 hidden states during generation.
     model.to(device=device, dtype=dtype).eval()
 
-    text = f"Question: {args.prompt}\nAnswer:"
+    # Match the exact training prefix, including the trailing space after Answer:.
+    text = f"Question: {args.prompt.strip()}\nAnswer: "
     inputs = tokenizer(text, return_tensors="pt").to(device)
     generation_kwargs = {
         "max_new_tokens": args.max_new_tokens,
+        "min_new_tokens": args.min_new_tokens,
         "do_sample": args.temperature > 0,
-        "pad_token_id": tokenizer.eos_token_id,
+        "pad_token_id": tokenizer.pad_token_id,
+        "eos_token_id": tokenizer.eos_token_id,
     }
     if args.temperature > 0:
         generation_kwargs["temperature"] = args.temperature
 
-    with torch.no_grad():
+    with torch.inference_mode():
         output = model.generate(**inputs, **generation_kwargs)
-    print(tokenizer.decode(output[0], skip_special_tokens=True))
+    generated_ids = output[0, inputs["input_ids"].shape[1] :]
+    print(tokenizer.decode(generated_ids, skip_special_tokens=True).strip())
     print(f"active_pattern={learner_system.active_pattern}")
     print(f"available_patterns={list(learner_system.patterns.keys())}")
 
