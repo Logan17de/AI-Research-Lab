@@ -110,3 +110,33 @@ notebook_login()
   --pattern-name multiplication \
   --prompt "What is 13 times 8?"
 ```
+
+## 8. Interactive chat
+
+Use `%run` in Colab so `input()` remains interactive:
+
+```python
+%run chat.py \
+  --checkpoint runs/single/addition-then-multiplication/best \
+  --pattern-name addition \
+  --dtype auto \
+  --max-new-tokens 32
+```
+
+Inside chat:
+
+```text
+/patterns
+/use addition
+/use multiplication
+/base
+/settings
+/help
+/exit
+```
+
+For Model B, change the checkpoint path to:
+
+```text
+runs/all/addition-then-multiplication/best
+```
