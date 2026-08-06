@@ -14,6 +14,7 @@ from pattern_learners.learner import PatternLearnerSystem
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Generate with a trained pattern learner")
     parser.add_argument("--checkpoint", required=True)
+    parser.add_argument("--pattern-name")
     parser.add_argument("--prompt", required=True)
     parser.add_argument("--max-new-tokens", type=int, default=32)
     parser.add_argument("--temperature", type=float, default=0.0)
@@ -27,11 +28,17 @@ def main() -> None:
     model_name = summary["model_name"]
 
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    dtype = torch.bfloat16 if device.type == "cuda" and torch.cuda.is_bf16_supported() else torch.float32
+    dtype = (
+        torch.bfloat16
+        if device.type == "cuda" and torch.cuda.is_bf16_supported()
+        else torch.float32
+    )
     tokenizer = AutoTokenizer.from_pretrained(checkpoint / "tokenizer")
     model = AutoModelForCausalLM.from_pretrained(model_name, torch_dtype=dtype)
     learner_system = PatternLearnerSystem.load(checkpoint / "learner", model)
     load_trained_base_parameters(model, checkpoint / "trained_base_parameters.pt")
+    if args.pattern_name is not None:
+        learner_system.set_active_pattern(args.pattern_name)
     model.to(device).eval()
 
     text = f"Question: {args.prompt}\nAnswer:"
@@ -48,6 +55,7 @@ def main() -> None:
         output = model.generate(**inputs, **generation_kwargs)
     print(tokenizer.decode(output[0], skip_special_tokens=True))
     print(f"active_pattern={learner_system.active_pattern}")
+    print(f"available_patterns={list(learner_system.patterns.keys())}")
 
 
 if __name__ == "__main__":
