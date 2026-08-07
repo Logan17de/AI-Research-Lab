@@ -6,6 +6,24 @@
 
 This repository tracks research on **continual learning**, **localized adaptation**, **parameter-efficient training**, **capacity expansion**, and **governed machine reasoning**.
 
+## Runnable implementation
+
+The complete Pythia training implementation is available in
+[`Pythia_run/`](Pythia_run/README.md). It includes Token MOD, controlled
+plasticity, stage-aware Adaptive Transformer Expansion (ATE), SFT data
+preparation, evaluation, chat, checkpoint migration, and regression tests.
+
+For a Colab checkout:
+
+```bash
+git clone https://github.com/Logan17de/AI-Research-Lab.git
+%cd AI-Research-Lab/Pythia_run
+pip install -r requirements.txt
+```
+
+Datasets, model checkpoints, training runs, and generated output files are not
+stored in Git.
+
 > **Central question:** Can a smaller frozen pretrained model gain useful new capacity while preserving access to its original knowledge—and compete with a much larger densely trained model?
 
 ## Current Experiment

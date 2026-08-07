@@ -1,0 +1,9 @@
+model,checkpoint,target_tokens,input_tokens,train_target_ppl,in_domain_ppl,rephrased_ppl,pretrained_capability_ppl,exact_match,normalized_exact_match,eos_accuracy,premature_eos_rate,repeated_trigram_rate,peak_vram_gib,ttft_ms,decode_ms_per_token,tokens_per_second,total_parameters,trainable_parameters,enabled_mods
+Pythia-1.4B frozen+MOD,,,,,,,,,,,,,,,,,1421348864,6701056,"emb,attn,ffn"
+Pythia-1.4B no Emb MOD,,,,,,,,,,,,,,,,,1421348864,6701056,"attn,ffn"
+Pythia-1.4B no Attn MOD,,,,,,,,,,,,,,,,,1421348864,6701056,"emb,ffn"
+Pythia-1.4B no FFN MOD,,,,,,,,,,,,,,,,,1421348864,6701056,"emb,attn"
+Pythia-1.4B all MODs disabled,,,,,,,,,,,,,,,,,1421348864,6701056,none
+Pythia-2.8B full FT,,,,,,,,,,,,,,,,,2775208960,2775208960,none
+Pythia-1.4B untouched,,,,,,,,,,,,,,,,,1414647808,0,none
+Pythia-2.8B untouched,,,,,,,,,,,,,,,,,2775208960,0,none

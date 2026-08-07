@@ -1,0 +1,16 @@
+{
+  "groups": {
+    "in_domain": {
+      "dataset_path": "data/pythia/validation_chat.jsonl",
+      "data_format": "chat_jsonl"
+    },
+    "rephrased_knowledge": {
+      "dataset_path": "data/pythia/rephrased_chat.jsonl",
+      "data_format": "chat_jsonl"
+    },
+    "untouched_pretrained_capability": {
+      "dataset_path": "data/pythia/pretrained_capability_chat.jsonl",
+      "data_format": "chat_jsonl"
+    }
+  }
+}
